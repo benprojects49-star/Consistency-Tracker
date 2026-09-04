@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#030711">
+  <meta name="description" content="A simple offline consistency and habit tracker">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Consistency Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-label="Consistency logo">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M12 25.5 21 34l15-19" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="2" opacity=".45"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Consistency</h1>
+          <p>Small actions. Remarkable results.</p>
+        </div>
+      </div>
+
+      <div class="date-display">
+        <span id="currentDate"></span>
+        <button id="todayButton" class="today-button" type="button">Today</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">YOUR DISCIPLINE DASHBOARD</p>
+        <h2>Build a life you’re proud of.</h2>
+        <p class="hero-text">Show up every day and let consistency do the heavy lifting.</p>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-heading">
+          <div>
+            <strong>Daily completions</strong>
+            <small>One bar represents one day</small>
+          </div>
+        </div>
+        <div class="chart-viewport">
+          <div id="barChart" class="bar-chart"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-icon green">✓</span>
+        <div>
+          <p>Completed today</p>
+          <strong id="todayCount">0 / 0</strong>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon orange">↗</span>
+        <div>
+          <p>Monthly progress</p>
+          <strong id="weeklyProgress">0%</strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="tracker-card">
+      <div class="tracker-heading">
+        <div class="tracker-title">
+          <h3>Monthly habits</h3>
+          <p>Tap a cell to mark a habit complete. You can plan habits in future months.</p>
+        </div>
+
+        <div class="view-controls" aria-label="Monthly habit size controls">
+          <span class="view-controls-label">Habit size:</span>
+          <div class="habit-zoom">
+            <button id="zoomOut" type="button" aria-label="Decrease habit size">−</button>
+            <button id="zoomIn" type="button" aria-label="Increase habit size">＋</button>
+          </div>
+        </div>
+
+        <button id="addHabitButton" class="add-button" type="button">＋ Add habit</button>
+      </div>
+
+      <div class="month-navigation">
+        <button id="previousMonth" class="month-button" type="button" aria-label="Previous month">‹</button>
+        <div class="month-label" id="monthTitle"></div>
+        <button id="nextMonth" class="month-button" type="button" aria-label="Next month">›</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="habit-table">
+          <thead>
+            <tr id="weekHeaders">
+              <th class="habit-column">Habit</th>
+            </tr>
+            <tr id="dayHeaders">
+              <th class="habit-column">Days</th>
+            </tr>
+          </thead>
+          <tbody id="habitRows"></tbody>
+        </table>
+      </div>
+
+      <div class="tracker-footer">
+        <div class="legend">
+          <span><i class="legend-box completed"></i> Completed</span>
+          <span><i class="legend-box"></i> Not completed</span>
+        </div>
+        <span id="completionSummary">0 completions this month</span>
+      </div>
+    </section>
+
+    <p class="footer-message">Progress, not perfection. Keep showing up.</p>
+  </main>
+
+  <div id="habitModal" class="modal hidden">
+    <div class="modal-content">
+      <button id="closeModal" class="close-button" type="button" aria-label="Close">×</button>
+      <h3>Add a new habit</h3>
+      <p>Create a habit you want to practice consistently.</p>
+
+      <form id="habitForm">
+        <label for="habitName">Habit name</label>
+        <input id="habitName" type="text" maxlength="28" placeholder="e.g. Read for 20 minutes" required>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelButton" class="cancel-button">Cancel</button>
+          <button type="submit" class="save-button">Add habit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch((error) => {
+          console.error("Offline support could not be enabled:", error);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
