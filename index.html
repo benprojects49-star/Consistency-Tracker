@@ -40,15 +40,36 @@
         <p class="hero-text">Show up every day and let consistency do the heavy lifting.</p>
       </div>
 
-      <div class="chart-card">
-        <div class="chart-heading">
-          <div>
-            <strong>Daily completions</strong>
-            <small>One bar represents one day</small>
+      <div class="chart-dashboard">
+        <div class="chart-card">
+          <div class="chart-heading">
+            <div>
+              <strong id="chartTitle">Daily completions</strong>
+              <small id="chartSubtitle">One bar represents one day</small>
+            </div>
+            <div class="chart-menu-wrap">
+              <button id="chartMenuButton" class="chart-menu-button" type="button" aria-label="Change graph format" aria-expanded="false">⋮</button>
+              <div id="chartMenu" class="chart-menu hidden" role="menu">
+                <button type="button" data-chart-mode="daily" role="menuitem">Daily graph</button>
+                <button type="button" data-chart-mode="weekly" role="menuitem">Weekly graph</button>
+                <button type="button" data-chart-mode="monthly" role="menuitem">Monthly graph</button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-viewport">
+            <div id="barChart" class="bar-chart"></div>
           </div>
         </div>
-        <div class="chart-viewport">
-          <div id="barChart" class="bar-chart"></div>
+
+        <div class="progress-card" aria-label="Monthly progress">
+          <div class="progress-ring" id="progressRing">
+            <strong id="progressRingValue">0%</strong>
+            <span>complete</span>
+          </div>
+          <div>
+            <strong>Monthly progress</strong>
+            <small id="progressRingSummary">0 of 0 days</small>
+          </div>
         </div>
       </div>
     </section>
@@ -106,6 +127,11 @@
             </tr>
           </thead>
           <tbody id="habitRows"></tbody>
+          <tfoot>
+            <tr id="dayProgressHeaders">
+              <th class="habit-column">Progress</th>
+            </tr>
+          </tfoot>
         </table>
       </div>
 

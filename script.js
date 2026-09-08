@@ -15,15 +15,20 @@ let todayKey = getDateKey(today);
 const habitRows = document.getElementById("habitRows");
 const weekHeaders = document.getElementById("weekHeaders");
 const dayHeaders = document.getElementById("dayHeaders");
+const dayProgressHeaders = document.getElementById("dayProgressHeaders");
+const chartMenuButton = document.getElementById("chartMenuButton");
+const chartMenu = document.getElementById("chartMenu");
 const habitModal = document.getElementById("habitModal");
 const habitForm = document.getElementById("habitForm");
 const habitName = document.getElementById("habitName");
 const barChart = document.getElementById("barChart");
 
 let habitZoomIndex = getSavedZoom();
+let chartMode = readStorage("consistencyChartMode", "daily");
 let viewedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 let monthDates = getMonthDates(viewedMonth);
-let habits = getSavedHabits();
+let habitMonths = getSavedHabitMonths();
+let habits = getHabitsForMonth(viewedMonth);
 
 updateCurrentDate();
 
@@ -85,31 +90,50 @@ function getSavedZoom() {
   return Math.max(0, Math.min(viewSizes.length - 1, savedZoom));
 }
 
-function getSavedHabits() {
-  try {
-    const savedHabits = JSON.parse(
-      readStorage("consistencyHabits", "null")
-    );
+function normalizeHabits(value) {
+  if (!Array.isArray(value)) return [];
 
-    if (!Array.isArray(savedHabits)) {
-      return createDefaultHabits();
+  return value
+    .filter((habit) => habit && typeof habit.name === "string")
+    .map((habit, index) => ({
+      id: habit.id ?? `${Date.now()}-${index}`,
+      name: habit.name.trim(),
+      sticker: habit.sticker || getSticker(habit.name),
+      completed:
+        habit.completed && typeof habit.completed === "object"
+          ? habit.completed
+          : {}
+    }))
+    .filter((habit) => habit.name);
+}
+
+function getSavedHabitMonths() {
+  try {
+    const savedMonths = JSON.parse(readStorage("consistencyHabitMonths", "null"));
+
+    if (savedMonths && typeof savedMonths === "object") {
+      return Object.fromEntries(
+        Object.entries(savedMonths).map(([key, value]) => [key, normalizeHabits(value)])
+      );
     }
 
-    return savedHabits
-      .filter((habit) => habit && typeof habit.name === "string")
-      .map((habit, index) => ({
-        id: habit.id ?? `${Date.now()}-${index}`,
-        name: habit.name.trim(),
-        sticker: habit.sticker || getSticker(habit.name),
-        completed:
-          habit.completed && typeof habit.completed === "object"
-            ? habit.completed
-            : {}
-      }))
-      .filter((habit) => habit.name);
+    const oldHabits = JSON.parse(readStorage("consistencyHabits", "null"));
+    return { [getMonthKey(viewedMonth)]: normalizeHabits(oldHabits).length
+      ? normalizeHabits(oldHabits)
+      : createDefaultHabits() };
   } catch {
-    return createDefaultHabits();
+    return { [getMonthKey(viewedMonth)]: createDefaultHabits() };
   }
+}
+
+function getMonthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getHabitsForMonth(date) {
+  const key = getMonthKey(date);
+  if (!habitMonths[key]) habitMonths[key] = [];
+  return habitMonths[key];
 }
 
 function getDateKey(date) {
@@ -136,7 +160,8 @@ function getMonthDates(date) {
 }
 
 function saveHabits() {
-  writeStorage("consistencyHabits", JSON.stringify(habits));
+  habitMonths[getMonthKey(viewedMonth)] = habits;
+  writeStorage("consistencyHabitMonths", JSON.stringify(habitMonths));
 }
 
 function setHabitSize(index) {
@@ -159,6 +184,7 @@ function setHabitSize(index) {
 }
 
 function renderMonth() {
+  habits = getHabitsForMonth(viewedMonth);
   monthDates = getMonthDates(viewedMonth);
 
   document.getElementById("monthTitle").textContent =
@@ -175,6 +201,7 @@ function renderMonth() {
 function renderHeaders() {
   weekHeaders.innerHTML = '<th class="habit-column">Habit</th>';
   dayHeaders.innerHTML = '<th class="habit-column">Days</th>';
+  dayProgressHeaders.innerHTML = '<th class="habit-column">Progress</th>';
 
   for (let start = 0; start < monthDates.length; start += 7) {
     const weekHeader = document.createElement("th");
@@ -203,6 +230,20 @@ function renderHeaders() {
     `;
 
     dayHeaders.appendChild(th);
+
+    const progressCell = document.createElement("th");
+    const completedCount = habits.filter((habit) => habit.completed[dateKey]).length;
+    const progress = habits.length ? Math.round((completedCount / habits.length) * 100) : 0;
+    const progressCircle = document.createElement("span");
+    const progressText = document.createElement("span");
+
+    progressCircle.className = "day-progress";
+    progressCircle.style.background = `conic-gradient(var(--purple) 0deg ${progress * 3.6}deg, #302449 ${progress * 3.6}deg 360deg)`;
+    progressText.textContent = `${progress}%`;
+    progressCircle.appendChild(progressText);
+    progressCell.appendChild(progressCircle);
+    progressCell.className = th.className;
+    dayProgressHeaders.appendChild(progressCell);
   });
 }
 
@@ -257,37 +298,78 @@ function renderHabits() {
 }
 
 function renderChart() {
-  const maxCompletions = Math.max(habits.length, 1);
+  const isWeekly = chartMode === "weekly";
+  const isYearly = chartMode === "monthly";
+  const groups = isYearly
+    ? Array.from({ length: 12 }, (_, monthIndex) => {
+        const month = new Date(viewedMonth.getFullYear(), monthIndex, 1);
+        const dates = getMonthDates(month);
+        const monthHabits = habitMonths[getMonthKey(month)] || [];
+        const possible = monthHabits.length * dates.length;
+        const completed = monthHabits.reduce(
+          (total, habit) => total + dates.filter((dateKey) => habit.completed[dateKey]).length,
+          0
+        );
+
+        return {
+          label: month.toLocaleDateString("en-US", { month: "short" }),
+          value: possible ? (completed / possible) * 100 : 0,
+          title: `${month.toLocaleDateString("en-US", { month: "long" })}: ${Math.round(possible ? (completed / possible) * 100 : 0)}% complete`
+        };
+      })
+    : (isWeekly
+        ? Array.from({ length: Math.ceil(monthDates.length / 7) }, (_, index) => monthDates.slice(index * 7, index * 7 + 7))
+        : monthDates.map((dateKey) => [dateKey]));
 
   barChart.innerHTML = "";
-  barChart.style.width = `${Math.max(100, monthDates.length * 17)}px`;
+  barChart.className = `bar-chart ${isYearly ? "monthly" : isWeekly ? "weekly" : "daily"}`;
+  document.getElementById("chartTitle").textContent = isYearly
+    ? "Monthly progress"
+    : isWeekly ? "Weekly completions" : "Daily completions";
+  document.getElementById("chartSubtitle").textContent = isYearly
+    ? `Progress for ${viewedMonth.getFullYear()}`
+    : isWeekly ? "One bar represents one week" : "One bar represents one day";
+  document.querySelectorAll("[data-chart-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.chartMode === chartMode);
+  });
 
-  monthDates.forEach((dateKey) => {
-    const completedCount = habits.filter(
-      (habit) => habit.completed[dateKey]
-    ).length;
+  groups.forEach((group, groupIndex) => {
+    let value;
+    let labelText;
+    let title;
+    let dateKey;
 
-    const date = new Date(`${dateKey}T12:00:00`);
+    if (isYearly) {
+      value = group.value;
+      labelText = group.label;
+      title = group.title;
+    } else {
+      dateKey = group[0];
+      const completedCount = group.reduce(
+        (total, key) => total + habits.filter((habit) => habit.completed[key]).length,
+        0
+      );
+      value = habits.length
+        ? (completedCount / (habits.length * group.length)) * 100
+        : 0;
+      const date = new Date(`${dateKey}T12:00:00`);
+      labelText = isWeekly ? `W${groupIndex + 1}` : date.getDate();
+      title = isWeekly
+        ? `Week ${groupIndex + 1}: ${completedCount} completion${completedCount === 1 ? "" : "s"}`
+        : `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${completedCount} completion${completedCount === 1 ? "" : "s"}`;
+    }
+
     const column = document.createElement("div");
     const fill = document.createElement("div");
     const label = document.createElement("span");
 
-    column.className = `bar-column ${dateKey === todayKey ? "today" : ""}`;
+    column.className = `bar-column ${isWeekly ? "weekly" : ""}`;
     fill.className = "bar-fill";
     label.className = "bar-label";
-
-    fill.style.height = `${Math.max(
-      completedCount ? (completedCount / maxCompletions) * 100 : 3,
-      3
-    )}%`;
-
-    label.textContent = date.getDate();
-    column.title = `${date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric"
-    })}: ${completedCount} completion${completedCount === 1 ? "" : "s"}`;
-
-    column.setAttribute("aria-label", column.title);
+    fill.style.height = `${Math.max(value, 3)}%`;
+    label.textContent = labelText;
+    column.title = title;
+    column.setAttribute("aria-label", title);
     column.append(fill, label);
     barChart.appendChild(column);
   });
@@ -300,6 +382,7 @@ function toggleHabit(habitId, dateKey) {
 
   habit.completed[dateKey] = !Boolean(habit.completed[dateKey]);
   saveHabits();
+  renderHeaders();
   renderHabits();
   renderChart();
 }
@@ -315,6 +398,7 @@ function deleteHabit(habitId) {
   );
 
   saveHabits();
+  renderHeaders();
   renderHabits();
   renderChart();
 }
@@ -340,11 +424,19 @@ function updateStats() {
 
   document.getElementById("weeklyProgress").textContent = `${progress}%`;
 
+  const progressRing = document.getElementById("progressRing");
+  const progressDegrees = progress * 3.6;
+  progressRing.style.background = `conic-gradient(var(--green) 0deg ${progressDegrees}deg, #173452 ${progressDegrees}deg 360deg)`;
+  document.getElementById("progressRingValue").textContent = `${progress}%`;
+  document.getElementById("progressRingSummary").textContent =
+    `${monthCompleted} of ${possibleCompletions} days`;
+
   document.getElementById("completionSummary").textContent =
     `${monthCompleted} completion${monthCompleted === 1 ? "" : "s"} this month`;
 }
 
 function changeMonth(amount) {
+  saveHabits();
   viewedMonth = new Date(
     viewedMonth.getFullYear(),
     viewedMonth.getMonth() + amount,
@@ -402,6 +494,28 @@ function closeModal() {
   habitModal.classList.add("hidden");
   habitForm.reset();
 }
+
+chartMenuButton.addEventListener("click", () => {
+  const isHidden = chartMenu.classList.toggle("hidden");
+  chartMenuButton.setAttribute("aria-expanded", String(!isHidden));
+});
+
+document.querySelectorAll("[data-chart-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    chartMode = button.dataset.chartMode;
+    writeStorage("consistencyChartMode", chartMode);
+    chartMenu.classList.add("hidden");
+    chartMenuButton.setAttribute("aria-expanded", "false");
+    renderChart();
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (!chartMenu.contains(event.target) && event.target !== chartMenuButton) {
+    chartMenu.classList.add("hidden");
+    chartMenuButton.setAttribute("aria-expanded", "false");
+  }
+});
 
 document.getElementById("addHabitButton").addEventListener("click", openModal);
 document.getElementById("closeModal").addEventListener("click", closeModal);

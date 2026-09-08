@@ -161,16 +161,139 @@ input:focus-visible {
   font-size: 14px;
 }
 
+.chart-dashboard {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  width: min(100%, 620px);
+}
+
 .chart-card {
-  width: min(100%, 450px);
+  flex: 1 1 450px;
+  min-width: 0;
   padding: 18px 20px;
   border: 1px solid #19517d;
   border-radius: 14px;
   background: linear-gradient(135deg, #0b2342, #081224);
 }
 
+.progress-card {
+  display: flex;
+  width: 145px;
+  flex: 0 0 145px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 15px 10px;
+  border: 1px solid #19517d;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0b2342, #081224);
+  text-align: center;
+}
+
+.progress-card strong {
+  display: block;
+  font-size: 12px;
+}
+
+.progress-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.progress-ring {
+  display: grid;
+  width: 92px;
+  height: 92px;
+  place-content: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) 0deg, var(--green) 0deg, #173452 0deg);
+  position: relative;
+}
+
+.progress-ring::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: #09172b;
+}
+
+.progress-ring strong,
+.progress-ring span {
+  position: relative;
+  z-index: 1;
+}
+
+.progress-ring strong {
+  font-size: 19px;
+}
+
+.progress-ring span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
 .chart-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.chart-menu-wrap {
+  position: relative;
+}
+
+.chart-menu-button {
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card-light);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.chart-menu {
+  position: absolute;
+  top: 33px;
+  right: 0;
+  max-width: calc(100vw - 24px);
+  z-index: 3;
+  width: 145px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0c1a32;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .35);
+}
+
+.chart-menu.hidden {
+  display: none;
+}
+
+.chart-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  text-align: left;
+}
+
+.chart-menu button:hover,
+.chart-menu button.active {
+  background: #173452;
+  color: var(--blue-bright);
 }
 
 .chart-heading strong {
@@ -192,6 +315,7 @@ input:focus-visible {
   display: flex;
   align-items: flex-end;
   gap: 3px;
+  width: 100%;
   height: 125px;
   min-width: 100%;
   border-bottom: 1px solid var(--line);
@@ -199,8 +323,9 @@ input:focus-visible {
 
 .bar-column {
   display: flex;
-  width: 14px;
-  min-width: 14px;
+  width: auto;
+  min-width: 0;
+  flex: 1 1 0;
   height: 100%;
   flex-direction: column;
   align-items: center;
@@ -213,6 +338,23 @@ input:focus-visible {
   min-height: 3px;
   border-radius: 4px 4px 0 0;
   background: linear-gradient(180deg, var(--blue-bright), #227bff);
+}
+
+.bar-column.weekly {
+  width: auto;
+  min-width: 0;
+  flex: 1.15 1 0;
+}
+
+.bar-chart.daily {
+  width: max-content;
+  min-width: 0;
+}
+
+.bar-chart.daily .bar-column {
+  width: 15px;
+  min-width: 15px;
+  flex: 0 0 15px;
 }
 
 .bar-label {
@@ -416,6 +558,43 @@ input:focus-visible {
 
 .habit-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+#dayProgressHeaders th,
+#dayProgressHeaders td {
+  height: 30px !important;
+  border-bottom: 1px solid var(--line);
+}
+
+#dayProgressHeaders .habit-column {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.day-progress {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) 0deg, var(--green) 0deg, #173452 0deg 360deg);
+  position: relative;
+}
+
+.day-progress::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #09172b;
+}
+
+.day-progress span {
+  position: relative;
+  z-index: 1;
+  color: var(--text);
+  font-size: 7px;
+  font-weight: 800;
 }
 
 .habit-table td {
@@ -704,8 +883,12 @@ body.view-compact .habit-title {
     flex-direction: column;
   }
 
-  .chart-card {
+  .chart-dashboard {
     width: 100%;
+  }
+
+  .progress-card {
+    display: none;
   }
 
   .tracker-heading {
@@ -764,6 +947,11 @@ body.view-compact .habit-title {
   .month-label {
     min-width: 145px;
     font-size: 14px;
+  }
+
+  .chart-menu {
+    right: 0;
+    left: auto;
   }
 
   .tracker-footer {
