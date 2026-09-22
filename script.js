@@ -24,7 +24,10 @@ const habitName = document.getElementById("habitName");
 const barChart = document.getElementById("barChart");
 
 let habitZoomIndex = getSavedZoom();
-let chartMode = readStorage("consistencyChartMode", "daily");
+const savedChartMode = readStorage("consistencyChartMode", "daily");
+let chartMode = ["daily", "weekly", "monthly"].includes(savedChartMode)
+  ? savedChartMode
+  : "daily";
 let viewedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 let monthDates = getMonthDates(viewedMonth);
 let habitMonths = getSavedHabitMonths();
@@ -144,6 +147,16 @@ function getDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
+function getProgressDates() {
+  const isCurrentMonth =
+    viewedMonth.getFullYear() === today.getFullYear() &&
+    viewedMonth.getMonth() === today.getMonth();
+
+  return isCurrentMonth
+    ? monthDates.filter((dateKey) => dateKey <= todayKey)
+    : monthDates;
+}
+
 function getMonthDates(date) {
   const dates = [];
   const daysInMonth = new Date(
@@ -238,13 +251,14 @@ function renderHeaders() {
     const progressText = document.createElement("span");
 
     progressCircle.className = "day-progress";
-    progressCircle.style.background = `conic-gradient(var(--purple) 0deg ${progress * 3.6}deg, #302449 ${progress * 3.6}deg 360deg)`;
+    progressCircle.style.background = `conic-gradient(var(--green) 0deg ${progress * 3.6}deg, #173452 ${progress * 3.6}deg 360deg)`;
     progressText.textContent = `${progress}%`;
     progressCircle.appendChild(progressText);
     progressCell.appendChild(progressCircle);
     progressCell.className = th.className;
     dayProgressHeaders.appendChild(progressCell);
   });
+
 }
 
 function renderHabits() {
@@ -418,18 +432,21 @@ function updateStats() {
   const progress = possibleCompletions
     ? Math.round((monthCompleted / possibleCompletions) * 100)
     : 0;
+  const elapsedDates = monthDates.filter((dateKey) => dateKey <= todayKey);
+  const toDateCompleted = habits.reduce(
+    (total, habit) => total + elapsedDates.filter((date) => habit.completed[date]).length,
+    0
+  );
+  const toDatePossible = habits.length * elapsedDates.length;
+  const toDateProgress = toDatePossible
+    ? Math.round((toDateCompleted / toDatePossible) * 100)
+    : 0;
 
   document.getElementById("todayCount").textContent =
     `${todayCompleted} / ${habits.length}`;
 
   document.getElementById("weeklyProgress").textContent = `${progress}%`;
-
-  const progressRing = document.getElementById("progressRing");
-  const progressDegrees = progress * 3.6;
-  progressRing.style.background = `conic-gradient(var(--green) 0deg ${progressDegrees}deg, #173452 ${progressDegrees}deg 360deg)`;
-  document.getElementById("progressRingValue").textContent = `${progress}%`;
-  document.getElementById("progressRingSummary").textContent =
-    `${monthCompleted} of ${possibleCompletions} days`;
+  document.getElementById("toDateProgress").textContent = `${toDateProgress}%`;
 
   document.getElementById("completionSummary").textContent =
     `${monthCompleted} completion${monthCompleted === 1 ? "" : "s"} this month`;
@@ -573,12 +590,14 @@ document.getElementById("todayButton").addEventListener("click", () => {
   renderMonth();
 
   const todayCell = document.querySelector(".check-cell.today");
+  const tableWrapper = todayCell?.closest(".table-wrapper");
 
-  if (todayCell) {
-    todayCell.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "center"
+  // Keep the page position stable while bringing today into view horizontally.
+  if (todayCell && tableWrapper && tableWrapper.scrollWidth > tableWrapper.clientWidth) {
+    const targetLeft = todayCell.offsetLeft - (tableWrapper.clientWidth - todayCell.offsetWidth) / 2;
+    tableWrapper.scrollTo({
+      left: Math.max(0, targetLeft),
+      behavior: "smooth"
     });
   }
 });

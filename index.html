@@ -61,16 +61,6 @@
           </div>
         </div>
 
-        <div class="progress-card" aria-label="Monthly progress">
-          <div class="progress-ring" id="progressRing">
-            <strong id="progressRingValue">0%</strong>
-            <span>complete</span>
-          </div>
-          <div>
-            <strong>Monthly progress</strong>
-            <small id="progressRingSummary">0 of 0 days</small>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -84,10 +74,23 @@
       </article>
 
       <article class="stat-card">
-        <span class="stat-icon orange">↗</span>
+        <span class="stat-icon orange" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M5 19V9m7 10V5m7 14v-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M4 19h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".65"/>
+          </svg>
+        </span>
         <div>
-          <p>Monthly progress</p>
+          <p>Progress this month</p>
           <strong id="weeklyProgress">0%</strong>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon blue">◷</span>
+        <div>
+          <p>Progress to date</p>
+          <strong id="toDateProgress">0%</strong>
         </div>
       </article>
     </section>
