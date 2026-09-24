@@ -1,4 +1,4 @@
-const CACHE_NAME = "consistency-tracker-v3";
+const CACHE_NAME = "consistency-tracker-v7";
 
 const APP_FILES = [
   "./",
