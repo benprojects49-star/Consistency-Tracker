@@ -21,8 +21,28 @@ const chartMenu = document.getElementById("chartMenu");
 const habitModal = document.getElementById("habitModal");
 const habitForm = document.getElementById("habitForm");
 const habitName = document.getElementById("habitName");
+const detailsModal = document.getElementById("habitDetailsModal");
+const confirmModal = document.getElementById("confirmModal");
+const confirmTitle = document.getElementById("confirmTitle");
+const confirmMessage = document.getElementById("confirmMessage");
+const confirmCancelButton = document.getElementById("confirmCancel");
+const confirmAcceptButton = document.getElementById("confirmAccept");
+const detailsTitle = document.getElementById("detailsTitle");
+const taskConfirmModal = document.getElementById("taskConfirmModal");
+const taskConfirmMessage = document.getElementById("taskConfirmMessage");
+const taskConfirmList = document.getElementById("taskConfirmList");
+const acceptTaskConfirmButton = document.getElementById("acceptTaskConfirm");
+const detailsChecklist = document.getElementById("detailsChecklist");
+const detailsForm = document.getElementById("detailsForm");
+const showDetailsFormButton = document.getElementById("showDetailsForm");
+const detailInput = document.getElementById("detailInput");
+const cancelDetailButton = document.getElementById("cancelDetailButton");
 const barChart = document.getElementById("barChart");
 
+let detailsHabitId = null;
+let habitColumnResize = null;
+let holdTimer = null;
+let progressPanelVisible = false;
 let habitZoomIndex = getSavedZoom();
 const savedChartMode = readStorage("consistencyChartMode", "daily");
 let chartMode = ["daily", "weekly", "monthly"].includes(savedChartMode)
@@ -49,6 +69,53 @@ function writeStorage(key, value) {
   } catch {
     // Storage may be unavailable in private or restricted browser contexts.
   }
+}
+
+function showConfirmation(message, title = "Are you sure?", acceptLabel = "Delete") {
+  return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
+    let finished = false;
+
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmAcceptButton.textContent = acceptLabel;
+    confirmModal.classList.remove("hidden");
+
+    const finish = (confirmed) => {
+      if (finished) return;
+      finished = true;
+      confirmModal.classList.add("hidden");
+      confirmCancelButton.removeEventListener("click", cancel);
+      confirmAcceptButton.removeEventListener("click", accept);
+      confirmModal.removeEventListener("click", dismissBackdrop);
+      confirmModal.removeEventListener("keydown", trapFocus);
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus();
+      }
+      resolve(confirmed);
+    };
+    const cancel = () => finish(false);
+    const accept = () => finish(true);
+    const dismissBackdrop = (event) => {
+      if (event.target === confirmModal) cancel();
+    };
+    const trapFocus = (event) => {
+      if (event.key !== "Tab") return;
+      if (event.shiftKey && document.activeElement === confirmCancelButton) {
+        event.preventDefault();
+        confirmAcceptButton.focus();
+      } else if (!event.shiftKey && document.activeElement === confirmAcceptButton) {
+        event.preventDefault();
+        confirmCancelButton.focus();
+      }
+    };
+
+    confirmCancelButton.addEventListener("click", cancel);
+    confirmAcceptButton.addEventListener("click", accept);
+    confirmModal.addEventListener("click", dismissBackdrop);
+    confirmModal.addEventListener("keydown", trapFocus);
+    confirmCancelButton.focus();
+  });
 }
 
 function createDefaultHabits() {
@@ -83,11 +150,15 @@ function refreshToday() {
   } else {
     updateStats();
   }
+
+  if (!detailsModal.classList.contains("hidden")) renderDetailsChecklist();
 }
 
 function getSavedZoom() {
-  const savedZoom = Number(readStorage("consistencyHabitZoom"));
+  const storedZoom = readStorage("consistencyHabitZoom");
+  if (storedZoom === null || storedZoom.trim() === "") return 2;
 
+  const savedZoom = Number(storedZoom);
   if (!Number.isInteger(savedZoom)) return 2;
 
   return Math.max(0, Math.min(viewSizes.length - 1, savedZoom));
@@ -105,7 +176,19 @@ function normalizeHabits(value) {
       completed:
         habit.completed && typeof habit.completed === "object"
           ? habit.completed
-          : {}
+          : {},
+      details: Array.isArray(habit.details)
+        ? habit.details
+            .filter((detail) => detail && typeof detail.text === "string")
+            .map((detail, detailIndex) => ({
+              id: detail.id ?? `${Date.now()}-${index}-${detailIndex}`,
+              text: detail.text.trim(),
+              completed: detail.completed && typeof detail.completed === "object"
+                ? detail.completed
+                : {}
+            }))
+            .filter((detail) => detail.text)
+        : []
     }))
     .filter((habit) => habit.name);
 }
@@ -177,6 +260,13 @@ function saveHabits() {
   writeStorage("consistencyHabitMonths", JSON.stringify(habitMonths));
 }
 
+function setHabitColumnWidth(width) {
+  const safeWidth = Math.max(145, Math.min(205, Number(width) || 165));
+  document.body.style.setProperty("--habit-column-width", `${safeWidth}px`);
+  document.querySelector(".habit-column-resizer")?.setAttribute("aria-valuenow", String(safeWidth));
+  writeStorage("consistencyHabitColumnWidth", String(safeWidth));
+}
+
 function setHabitSize(index) {
   habitZoomIndex = Math.max(0, Math.min(viewSizes.length - 1, index));
 
@@ -212,9 +302,29 @@ function renderMonth() {
 }
 
 function renderHeaders() {
-  weekHeaders.innerHTML = '<th class="habit-column">Habit</th>';
+  weekHeaders.innerHTML = '<th class="habit-column habit-heading"><span>Habit</span><button class="habit-column-resizer" type="button" role="separator" aria-orientation="vertical" aria-label="Resize habit name panel" aria-valuemin="145" aria-valuemax="205" title="Drag to resize habit name panel"></button><button id="progressPanelToggle" class="progress-toggle" type="button" aria-expanded="false" aria-label="Show habit progress" title="Show habit progress">▾</button></th>';
+  const resizeHandle = document.querySelector(".habit-column-resizer");
+  resizeHandle.setAttribute("aria-valuenow", String(parseFloat(getComputedStyle(document.body).getPropertyValue("--habit-column-width")) || 165));
   dayHeaders.innerHTML = '<th class="habit-column">Days</th>';
   dayProgressHeaders.innerHTML = '<th class="habit-column">Progress</th>';
+  document.querySelector(".table-wrapper").classList.toggle("has-progress", progressPanelVisible);
+  document.querySelector(".habit-table").classList.toggle("with-progress", progressPanelVisible);
+
+  if (progressPanelVisible) {
+    weekHeaders.insertAdjacentHTML("beforeend", '<th class="progress-column" rowspan="2"><span class="progress-heading-title">Habit completion rate</span><small class="progress-heading-subtitle">Completed days out of days in view</small></th>');
+    dayProgressHeaders.insertAdjacentHTML("beforeend", '<td class="progress-column" aria-hidden="true"></td>');
+  }
+
+  const progressPanelToggle = document.getElementById("progressPanelToggle");
+  progressPanelToggle.setAttribute("aria-expanded", String(progressPanelVisible));
+  progressPanelToggle.setAttribute("aria-label", `${progressPanelVisible ? "Hide" : "Show"} habit progress`);
+  progressPanelToggle.title = `${progressPanelVisible ? "Hide" : "Show"} habit progress`;
+  progressPanelToggle.textContent = progressPanelVisible ? "▴" : "▾";
+  progressPanelToggle.addEventListener("click", () => {
+    progressPanelVisible = !progressPanelVisible;
+    renderHeaders();
+    renderHabits();
+  });
 
   for (let start = 0; start < monthDates.length; start += 7) {
     const weekHeader = document.createElement("th");
@@ -275,7 +385,48 @@ function renderHabits() {
       <button class="delete-habit" data-id="${escapeHtml(String(habit.id))}" title="Delete habit" aria-label="Delete ${escapeHtml(habit.name)}">×</button>
     `;
 
+    nameCell.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      openHabitDetails(habit.id);
+    });
+    nameCell.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) return;
+      clearTimeout(holdTimer);
+      holdTimer = window.setTimeout(() => openHabitDetails(habit.id), 2000);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+      nameCell.addEventListener(eventName, () => clearTimeout(holdTimer));
+    });
+    nameCell.addEventListener("contextmenu", (event) => event.preventDefault());
+
     row.appendChild(nameCell);
+
+    if (progressPanelVisible) {
+      const elapsedDates = getProgressDates();
+      const completedCount = elapsedDates.filter((dateKey) => habit.completed[dateKey]).length;
+      const progressPercent = elapsedDates.length
+        ? Math.round((completedCount / elapsedDates.length) * 100)
+        : 0;
+      const progressCell = document.createElement("td");
+      const progressBar = document.createElement("span");
+      const progressFill = document.createElement("span");
+      const progressLabel = document.createElement("span");
+
+      progressCell.className = "habit-progress-cell";
+      progressBar.className = "habit-progress";
+      progressBar.setAttribute("role", "progressbar");
+      progressBar.setAttribute("aria-label", `${habit.name} progress`);
+      progressBar.setAttribute("aria-valuemin", "0");
+      progressBar.setAttribute("aria-valuemax", "100");
+      progressBar.setAttribute("aria-valuenow", String(progressPercent));
+      progressFill.className = "habit-progress-fill";
+      progressFill.style.width = `${progressPercent}%`;
+      progressLabel.className = "habit-progress-label";
+      progressLabel.textContent = `${progressPercent}% · ${completedCount}/${elapsedDates.length} days`;
+      progressBar.appendChild(progressFill);
+      progressCell.append(progressBar, progressLabel);
+      row.appendChild(progressCell);
+    }
 
     monthDates.forEach((dateKey, index) => {
       const cell = document.createElement("td");
@@ -389,36 +540,172 @@ function renderChart() {
   });
 }
 
-function toggleHabit(habitId, dateKey) {
+function confirmHabitTasks(habit, dateKey) {
+  return new Promise((resolve) => {
+    const tasks = Array.isArray(habit.details) ? habit.details : [];
+    const checkboxes = [];
+    let finished = false;
+
+    taskConfirmMessage.textContent = `Confirm that you completed every task for “${habit.name}”.`;
+    taskConfirmList.innerHTML = "";
+    acceptTaskConfirmButton.disabled = true;
+
+    tasks.forEach((task) => {
+      const item = document.createElement("li");
+      const checkbox = document.createElement("input");
+      const label = document.createElement("span");
+
+      checkbox.type = "checkbox";
+      checkbox.checked = Boolean(task.completed?.[dateKey]);
+      checkbox.setAttribute("aria-label", task.text);
+      label.textContent = task.text;
+      checkbox.addEventListener("change", () => {
+        acceptTaskConfirmButton.disabled = !checkboxes.every((entry) => entry.checked);
+      });
+      checkboxes.push(checkbox);
+      item.append(checkbox, label);
+      taskConfirmList.appendChild(item);
+    });
+
+    acceptTaskConfirmButton.disabled = !checkboxes.every((checkbox) => checkbox.checked);
+    taskConfirmModal.classList.remove("hidden");
+
+    const finish = (confirmed) => {
+      if (finished) return;
+      finished = true;
+      taskConfirmModal.classList.add("hidden");
+      acceptTaskConfirmButton.removeEventListener("click", accept);
+      document.getElementById("cancelTaskConfirm").removeEventListener("click", cancel);
+      document.getElementById("closeTaskConfirm").removeEventListener("click", cancel);
+      taskConfirmModal.removeEventListener("click", dismissBackdrop);
+      resolve(confirmed);
+    };
+    const cancel = () => finish(false);
+    const accept = () => {
+      if (checkboxes.some((checkbox) => !checkbox.checked)) return;
+      tasks.forEach((task) => {
+        task.completed = task.completed && typeof task.completed === "object"
+          ? task.completed
+          : {};
+        task.completed[dateKey] = true;
+      });
+      finish(true);
+    };
+    const dismissBackdrop = (event) => {
+      if (event.target === taskConfirmModal) cancel();
+    };
+
+    acceptTaskConfirmButton.addEventListener("click", accept);
+    document.getElementById("cancelTaskConfirm").addEventListener("click", cancel);
+    document.getElementById("closeTaskConfirm").addEventListener("click", cancel);
+    taskConfirmModal.addEventListener("click", dismissBackdrop);
+    taskConfirmList.querySelector("input:not(:checked)")?.focus();
+  });
+}
+
+async function toggleHabit(habitId, dateKey) {
   const habit = habits.find((item) => String(item.id) === String(habitId));
 
   if (!habit) return;
 
-  habit.completed[dateKey] = !Boolean(habit.completed[dateKey]);
+  const isCompleting = !Boolean(habit.completed[dateKey]);
+  if (isCompleting && habit.details?.length && !(await confirmHabitTasks(habit, dateKey))) return;
+
+  habit.completed[dateKey] = isCompleting;
   saveHabits();
   renderHeaders();
   renderHabits();
   renderChart();
 }
 
-function deleteHabit(habitId) {
-  if (habits.length === 1) {
-    alert("Keep at least one habit in your tracker.");
-    return;
-  }
+async function deleteHabit(habitId) {
+  const habit = habits.find((item) => String(item.id) === String(habitId));
+  if (!habit || !(await showConfirmation(`Delete “${habit.name}” and its history?`, "Delete habit?"))) return;
 
   habits = habits.filter(
     (habit) => String(habit.id) !== String(habitId)
   );
-
   saveHabits();
   renderHeaders();
   renderHabits();
   renderChart();
 }
 
+function openHabitDetails(habitId) {
+  const habit = habits.find((item) => String(item.id) === String(habitId));
+  if (!habit) return;
+
+  detailsHabitId = String(habit.id);
+  detailsTitle.textContent = `${habit.name} details`;
+  renderDetailsChecklist();
+  detailsForm.classList.add("hidden");
+  showDetailsFormButton.setAttribute("aria-expanded", "false");
+  detailsModal.classList.remove("hidden");
+}
+
+function renderDetailsChecklist() {
+  const habit = habits.find((item) => String(item.id) === detailsHabitId);
+  detailsChecklist.innerHTML = "";
+  if (!habit) return;
+
+  habit.details = Array.isArray(habit.details) ? habit.details : [];
+
+  if (habit.details.length === 0) {
+    const emptyMessage = document.createElement("li");
+    emptyMessage.className = "details-empty-state";
+    emptyMessage.textContent = "No steps yet. Tap ＋ to add your first one.";
+    detailsChecklist.appendChild(emptyMessage);
+    return;
+  }
+
+  habit.details.forEach((detail) => {
+    const item = document.createElement("li");
+    const text = document.createElement("span");
+    const removeButton = document.createElement("button");
+    const checkbox = document.createElement("input");
+
+    checkbox.type = "checkbox";
+    detail.completed = detail.completed && typeof detail.completed === "object"
+      ? detail.completed
+      : {};
+    checkbox.checked = Boolean(detail.completed[todayKey]);
+    checkbox.setAttribute("aria-label", `Complete ${detail.text} today`);
+    text.textContent = detail.text;
+    item.classList.toggle("done", checkbox.checked);
+    checkbox.addEventListener("change", () => {
+      detail.completed[todayKey] = checkbox.checked;
+      item.classList.toggle("done", checkbox.checked);
+      saveHabits();
+    });
+
+    removeButton.type = "button";
+    removeButton.className = "detail-remove-button";
+    removeButton.textContent = "×";
+    removeButton.setAttribute("aria-label", `Remove task: ${detail.text}`);
+    removeButton.title = "Remove task";
+    removeButton.addEventListener("click", async () => {
+      if (!(await showConfirmation(`Remove “${detail.text}”?`, "Remove task?", "Remove"))) return;
+      habit.details = habit.details.filter((item) => String(item.id) !== String(detail.id));
+      saveHabits();
+      renderDetailsChecklist();
+    });
+
+    item.append(text, removeButton, checkbox);
+    detailsChecklist.appendChild(item);
+  });
+}
+
+function closeHabitDetails() {
+  detailsModal.classList.add("hidden");
+  detailsForm.classList.add("hidden");
+  detailsForm.reset();
+  showDetailsFormButton.setAttribute("aria-expanded", "false");
+  detailsHabitId = null;
+}
+
 function updateStats() {
-  const todayCompleted = habits.filter(
+  const currentMonthHabits = habitMonths[getMonthKey(today)] || [];
+  const todayCompleted = currentMonthHabits.filter(
     (habit) => habit.completed[todayKey]
   ).length;
 
@@ -443,7 +730,7 @@ function updateStats() {
     : 0;
 
   document.getElementById("todayCount").textContent =
-    `${todayCompleted} / ${habits.length}`;
+    `${todayCompleted} / ${currentMonthHabits.length}`;
 
   document.getElementById("weeklyProgress").textContent = `${progress}%`;
   document.getElementById("toDateProgress").textContent = `${toDateProgress}%`;
@@ -499,7 +786,9 @@ function getOrdinal(number) {
 function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = String(text);
-  return div.innerHTML;
+  return div.innerHTML
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function openModal() {
@@ -537,6 +826,40 @@ document.addEventListener("click", (event) => {
 document.getElementById("addHabitButton").addEventListener("click", openModal);
 document.getElementById("closeModal").addEventListener("click", closeModal);
 document.getElementById("cancelButton").addEventListener("click", closeModal);
+document.getElementById("closeDetailsModal").addEventListener("click", closeHabitDetails);
+showDetailsFormButton.addEventListener("click", () => {
+  const isOpening = detailsForm.classList.contains("hidden");
+  detailsForm.classList.toggle("hidden", !isOpening);
+  showDetailsFormButton.setAttribute("aria-expanded", String(isOpening));
+  if (isOpening) detailInput.focus();
+});
+cancelDetailButton.addEventListener("click", () => {
+  detailsForm.reset();
+  detailsForm.classList.add("hidden");
+  showDetailsFormButton.setAttribute("aria-expanded", "false");
+});
+detailsModal.addEventListener("click", (event) => {
+  if (event.target === detailsModal) closeHabitDetails();
+});
+
+detailsForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const habit = habits.find((item) => String(item.id) === detailsHabitId);
+  const text = detailInput.value.trim();
+  if (!habit || !text) return;
+
+  habit.details = Array.isArray(habit.details) ? habit.details : [];
+  habit.details.push({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    text,
+    completed: {}
+  });
+  saveHabits();
+  renderDetailsChecklist();
+  detailsForm.reset();
+  detailsForm.classList.add("hidden");
+  showDetailsFormButton.setAttribute("aria-expanded", "false");
+});
 
 document.getElementById("previousMonth").addEventListener("click", () => {
   changeMonth(-1);
@@ -554,8 +877,54 @@ document.getElementById("zoomIn").addEventListener("click", () => {
   setHabitSize(habitZoomIndex + 1);
 });
 
+document.addEventListener("pointerdown", (event) => {
+  if (!event.target.closest?.(".habit-column-resizer")) return;
+  event.preventDefault();
+  habitColumnResize = {
+    startX: event.clientX,
+    startWidth: parseFloat(getComputedStyle(document.body).getPropertyValue("--habit-column-width")) || 165
+  };
+  document.body.classList.add("resizing-habit-column");
+});
+
+document.addEventListener("pointermove", (event) => {
+  if (!habitColumnResize) return;
+  setHabitColumnWidth(habitColumnResize.startWidth + event.clientX - habitColumnResize.startX);
+});
+
+function finishHabitColumnResize() {
+  habitColumnResize = null;
+  document.body.classList.remove("resizing-habit-column");
+}
+
+document.addEventListener("pointerup", finishHabitColumnResize);
+document.addEventListener("pointercancel", finishHabitColumnResize);
+
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !habitModal.classList.contains("hidden")) {
+  const resizeHandle = event.target.closest?.(".habit-column-resizer");
+  if (resizeHandle && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+    event.preventDefault();
+    const currentWidth = parseFloat(getComputedStyle(document.body).getPropertyValue("--habit-column-width")) || 165;
+    setHabitColumnWidth(currentWidth + (event.key === "ArrowRight" ? 5 : -5));
+    return;
+  }
+
+  if (event.key !== "Escape") return;
+  if (!taskConfirmModal.classList.contains("hidden")) {
+    document.getElementById("cancelTaskConfirm").click();
+    return;
+  }
+  if (!confirmModal.classList.contains("hidden")) {
+    confirmCancelButton.click();
+    return;
+  }
+  if (!chartMenu.classList.contains("hidden")) {
+    chartMenu.classList.add("hidden");
+    chartMenuButton.setAttribute("aria-expanded", "false");
+  }
+  if (!detailsModal.classList.contains("hidden")) {
+    closeHabitDetails();
+  } else if (!habitModal.classList.contains("hidden")) {
     closeModal();
   }
 });
@@ -578,6 +947,7 @@ habitForm.addEventListener("submit", (event) => {
   });
 
   saveHabits();
+  renderHeaders();
   renderHabits();
   renderChart();
   closeModal();
@@ -604,6 +974,7 @@ document.getElementById("todayButton").addEventListener("click", () => {
 
 saveHabits();
 setHabitSize(habitZoomIndex);
+setHabitColumnWidth(readStorage("consistencyHabitColumnWidth", 165));
 renderMonth();
 
 window.setInterval(refreshToday, 60000);

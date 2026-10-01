@@ -99,7 +99,7 @@
       <div class="tracker-heading">
         <div class="tracker-title">
           <h3>Monthly habits</h3>
-          <p>Tap a cell to mark a habit complete. You can plan habits in future months.</p>
+          <p>Tap a cell to mark a habit complete. Press and hold a habit name for 2 seconds to add detailed steps.</p>
         </div>
 
         <div class="view-controls" aria-label="Monthly habit size controls">
@@ -151,9 +151,9 @@
   </main>
 
   <div id="habitModal" class="modal hidden">
-    <div class="modal-content">
+    <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle">
       <button id="closeModal" class="close-button" type="button" aria-label="Close">×</button>
-      <h3>Add a new habit</h3>
+      <h3 id="habitModalTitle">Add a new habit</h3>
       <p>Create a habit you want to practice consistently.</p>
 
       <form id="habitForm">
@@ -165,7 +165,54 @@
           <button type="submit" class="save-button">Add habit</button>
         </div>
       </form>
-    </div>
+    </section>
+  </div>
+
+  <div id="habitDetailsModal" class="modal hidden">
+    <section class="modal-content details-content" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
+      <button id="closeDetailsModal" class="close-button" type="button" aria-label="Close habit details">×</button>
+      <div class="details-header">
+        <div>
+          <h3 id="detailsTitle">Habit details</h3>
+          <p class="details-hint">Small steps make this habit easier to stick with.</p>
+        </div>
+        <button id="showDetailsForm" class="details-add-button" type="button" aria-label="Add a task" aria-expanded="false" title="Add a task">＋</button>
+      </div>
+      <ul id="detailsChecklist" class="details-checklist"></ul>
+      <form id="detailsForm" class="details-form hidden">
+        <label for="detailInput">Add a task or step</label>
+        <div class="details-input-row">
+          <input id="detailInput" type="text" maxlength="60" placeholder="e.g. Squats 25 × 4" required>
+          <button id="cancelDetailButton" class="cancel-button details-cancel-button" type="button" aria-label="Cancel adding task" title="Cancel">×</button>
+          <button class="save-button" type="submit">Add</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="taskConfirmModal" class="modal hidden">
+    <section class="modal-content task-confirm-content" role="dialog" aria-modal="true" aria-labelledby="taskConfirmTitle" aria-describedby="taskConfirmMessage">
+      <button id="closeTaskConfirm" class="close-button" type="button" aria-label="Cancel habit completion">×</button>
+      <h3 id="taskConfirmTitle">Confirm habit tasks</h3>
+      <p id="taskConfirmMessage"></p>
+      <ul id="taskConfirmList" class="task-confirm-list"></ul>
+      <div class="confirm-actions">
+        <button id="cancelTaskConfirm" class="cancel-button" type="button">Cancel</button>
+        <button id="acceptTaskConfirm" class="save-button" type="button" disabled>Confirm all</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="confirmModal" class="modal hidden">
+    <section class="modal-content confirm-content" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+      <span class="confirm-icon" aria-hidden="true">!</span>
+      <h3 id="confirmTitle">Are you sure?</h3>
+      <p id="confirmMessage"></p>
+      <div class="confirm-actions">
+        <button id="confirmCancel" class="cancel-button" type="button">Cancel</button>
+        <button id="confirmAccept" class="confirm-accept-button" type="button">Confirm</button>
+      </div>
+    </section>
   </div>
 
   <script src="script.js"></script>
