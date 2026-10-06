@@ -38,7 +38,10 @@ const showDetailsFormButton = document.getElementById("showDetailsForm");
 const detailInput = document.getElementById("detailInput");
 const cancelDetailButton = document.getElementById("cancelDetailButton");
 const barChart = document.getElementById("barChart");
+const installButton = document.getElementById("installButton");
 
+let deferredInstallPrompt = null;
+let appInstalled = false;
 let detailsHabitId = null;
 let habitColumnResize = null;
 let holdTimer = null;
@@ -800,6 +803,39 @@ function closeModal() {
   habitModal.classList.add("hidden");
   habitForm.reset();
 }
+
+function isInstalledApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+
+function updateInstallButton() {
+  installButton.hidden = appInstalled || isInstalledApp();
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallButton();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  appInstalled = true;
+  updateInstallButton();
+});
+
+installButton.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) {
+    window.alert("To install, open your browser’s menu and choose ‘Add to Home Screen’ or ‘Install app’.");
+    return;
+  }
+
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+});
+
+updateInstallButton();
 
 chartMenuButton.addEventListener("click", () => {
   const isHidden = chartMenu.classList.toggle("hidden");
