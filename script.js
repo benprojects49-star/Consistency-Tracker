@@ -44,7 +44,6 @@ let deferredInstallPrompt = null;
 let appInstalled = false;
 let detailsHabitId = null;
 let habitColumnResize = null;
-let holdTimer = null;
 let progressPanelVisible = false;
 let habitZoomIndex = getSavedZoom();
 const savedChartMode = readStorage("consistencyChartMode", "daily");
@@ -233,6 +232,19 @@ function getDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
+function getHabitDayProgress(habit, dateKey) {
+  const tasks = Array.isArray(habit.details) ? habit.details : [];
+  if (tasks.length === 0) return habit.completed[dateKey] ? 1 : 0;
+
+  const hasTaskHistory = tasks.some((task) =>
+    Object.prototype.hasOwnProperty.call(task.completed || {}, dateKey)
+  );
+  if (!hasTaskHistory) return habit.completed[dateKey] ? 1 : 0;
+
+  const completedTasks = tasks.filter((task) => task.completed?.[dateKey]).length;
+  return completedTasks / tasks.length;
+}
+
 function getProgressDates() {
   const isCurrentMonth =
     viewedMonth.getFullYear() === today.getFullYear() &&
@@ -314,7 +326,7 @@ function renderHeaders() {
   document.querySelector(".habit-table").classList.toggle("with-progress", progressPanelVisible);
 
   if (progressPanelVisible) {
-    weekHeaders.insertAdjacentHTML("beforeend", '<th class="progress-column" rowspan="2"><span class="progress-heading-title">Habit completion rate</span><small class="progress-heading-subtitle">Completed days out of days in view</small></th>');
+    weekHeaders.insertAdjacentHTML("beforeend", '<th class="progress-column" rowspan="2"><span class="progress-heading-title">Habit task progress</span><small class="progress-heading-subtitle">Task-weighted progress over days in view</small></th>');
     dayProgressHeaders.insertAdjacentHTML("beforeend", '<td class="progress-column" aria-hidden="true"></td>');
   }
 
@@ -358,8 +370,11 @@ function renderHeaders() {
     dayHeaders.appendChild(th);
 
     const progressCell = document.createElement("th");
-    const completedCount = habits.filter((habit) => habit.completed[dateKey]).length;
-    const progress = habits.length ? Math.round((completedCount / habits.length) * 100) : 0;
+    const completedProgress = habits.reduce(
+      (total, habit) => total + getHabitDayProgress(habit, dateKey),
+      0
+    );
+    const progress = habits.length ? Math.round((completedProgress / habits.length) * 100) : 0;
     const progressCircle = document.createElement("span");
     const progressText = document.createElement("span");
 
@@ -392,23 +407,18 @@ function renderHabits() {
       if (event.target.closest("button")) return;
       openHabitDetails(habit.id);
     });
-    nameCell.addEventListener("pointerdown", (event) => {
-      if (event.target.closest("button")) return;
-      clearTimeout(holdTimer);
-      holdTimer = window.setTimeout(() => openHabitDetails(habit.id), 2000);
-    });
-    ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
-      nameCell.addEventListener(eventName, () => clearTimeout(holdTimer));
-    });
     nameCell.addEventListener("contextmenu", (event) => event.preventDefault());
 
     row.appendChild(nameCell);
 
     if (progressPanelVisible) {
       const elapsedDates = getProgressDates();
-      const completedCount = elapsedDates.filter((dateKey) => habit.completed[dateKey]).length;
+      const completedProgress = elapsedDates.reduce(
+        (total, dateKey) => total + getHabitDayProgress(habit, dateKey),
+        0
+      );
       const progressPercent = elapsedDates.length
-        ? Math.round((completedCount / elapsedDates.length) * 100)
+        ? Math.round((completedProgress / elapsedDates.length) * 100)
         : 0;
       const progressCell = document.createElement("td");
       const progressBar = document.createElement("span");
@@ -425,7 +435,7 @@ function renderHabits() {
       progressFill.className = "habit-progress-fill";
       progressFill.style.width = `${progressPercent}%`;
       progressLabel.className = "habit-progress-label";
-      progressLabel.textContent = `${progressPercent}% · ${completedCount}/${elapsedDates.length} days`;
+      progressLabel.textContent = `${progressPercent}% task progress`;
       progressBar.appendChild(progressFill);
       progressCell.append(progressBar, progressLabel);
       row.appendChild(progressCell);
@@ -474,15 +484,18 @@ function renderChart() {
         const dates = getMonthDates(month);
         const monthHabits = habitMonths[getMonthKey(month)] || [];
         const possible = monthHabits.length * dates.length;
-        const completed = monthHabits.reduce(
-          (total, habit) => total + dates.filter((dateKey) => habit.completed[dateKey]).length,
+        const completedProgress = monthHabits.reduce(
+          (total, habit) => total + dates.reduce(
+            (dayTotal, dateKey) => dayTotal + getHabitDayProgress(habit, dateKey),
+            0
+          ),
           0
         );
 
         return {
           label: month.toLocaleDateString("en-US", { month: "short" }),
-          value: possible ? (completed / possible) * 100 : 0,
-          title: `${month.toLocaleDateString("en-US", { month: "long" })}: ${Math.round(possible ? (completed / possible) * 100 : 0)}% complete`
+          value: possible ? (completedProgress / possible) * 100 : 0,
+          title: `${month.toLocaleDateString("en-US", { month: "long" })}: ${Math.round(possible ? (completedProgress / possible) * 100 : 0)}% task progress`
         };
       })
     : (isWeekly
@@ -493,10 +506,10 @@ function renderChart() {
   barChart.className = `bar-chart ${isYearly ? "monthly" : isWeekly ? "weekly" : "daily"}`;
   document.getElementById("chartTitle").textContent = isYearly
     ? "Monthly progress"
-    : isWeekly ? "Weekly completions" : "Daily completions";
+    : isWeekly ? "Weekly progress" : "Daily progress";
   document.getElementById("chartSubtitle").textContent = isYearly
-    ? `Progress for ${viewedMonth.getFullYear()}`
-    : isWeekly ? "One bar represents one week" : "One bar represents one day";
+    ? `Task progress for ${viewedMonth.getFullYear()}`
+    : isWeekly ? "Task progress grouped by week" : "Task progress grouped by day";
   document.querySelectorAll("[data-chart-mode]").forEach((button) => {
     button.classList.toggle("active", button.dataset.chartMode === chartMode);
   });
@@ -513,18 +526,21 @@ function renderChart() {
       title = group.title;
     } else {
       dateKey = group[0];
-      const completedCount = group.reduce(
-        (total, key) => total + habits.filter((habit) => habit.completed[key]).length,
+      const completedProgress = group.reduce(
+        (total, key) => total + habits.reduce(
+          (dayTotal, habit) => dayTotal + getHabitDayProgress(habit, key),
+          0
+        ),
         0
       );
       value = habits.length
-        ? (completedCount / (habits.length * group.length)) * 100
+        ? (completedProgress / (habits.length * group.length)) * 100
         : 0;
       const date = new Date(`${dateKey}T12:00:00`);
       labelText = isWeekly ? `W${groupIndex + 1}` : date.getDate();
       title = isWeekly
-        ? `Week ${groupIndex + 1}: ${completedCount} completion${completedCount === 1 ? "" : "s"}`
-        : `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${completedCount} completion${completedCount === 1 ? "" : "s"}`;
+        ? `Week ${groupIndex + 1}: ${Math.round(value)}% task progress`
+        : `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${Math.round(value)}% task progress`;
     }
 
     const column = document.createElement("div");
@@ -548,10 +564,12 @@ function confirmHabitTasks(habit, dateKey) {
     const tasks = Array.isArray(habit.details) ? habit.details : [];
     const checkboxes = [];
     let finished = false;
+    const requiredTasks = Math.ceil(tasks.length / 2);
 
-    taskConfirmMessage.textContent = `Confirm that you completed every task for “${habit.name}”.`;
+    taskConfirmMessage.textContent = `Check at least ${requiredTasks} of ${tasks.length} tasks to mark “${habit.name}” complete. Your selected task progress will be saved.`;
     taskConfirmList.innerHTML = "";
-    acceptTaskConfirmButton.disabled = true;
+    acceptTaskConfirmButton.textContent = "Save progress";
+    acceptTaskConfirmButton.disabled = false;
 
     tasks.forEach((task) => {
       const item = document.createElement("li");
@@ -562,18 +580,14 @@ function confirmHabitTasks(habit, dateKey) {
       checkbox.checked = Boolean(task.completed?.[dateKey]);
       checkbox.setAttribute("aria-label", task.text);
       label.textContent = task.text;
-      checkbox.addEventListener("change", () => {
-        acceptTaskConfirmButton.disabled = !checkboxes.every((entry) => entry.checked);
-      });
       checkboxes.push(checkbox);
       item.append(checkbox, label);
       taskConfirmList.appendChild(item);
     });
 
-    acceptTaskConfirmButton.disabled = !checkboxes.every((checkbox) => checkbox.checked);
     taskConfirmModal.classList.remove("hidden");
 
-    const finish = (confirmed) => {
+    const finish = (result) => {
       if (finished) return;
       finished = true;
       taskConfirmModal.classList.add("hidden");
@@ -581,18 +595,19 @@ function confirmHabitTasks(habit, dateKey) {
       document.getElementById("cancelTaskConfirm").removeEventListener("click", cancel);
       document.getElementById("closeTaskConfirm").removeEventListener("click", cancel);
       taskConfirmModal.removeEventListener("click", dismissBackdrop);
-      resolve(confirmed);
+      resolve(result);
     };
-    const cancel = () => finish(false);
+    const cancel = () => finish(null);
     const accept = () => {
-      if (checkboxes.some((checkbox) => !checkbox.checked)) return;
-      tasks.forEach((task) => {
+      const completedTasks = checkboxes.filter((checkbox) => checkbox.checked).length;
+
+      tasks.forEach((task, index) => {
         task.completed = task.completed && typeof task.completed === "object"
           ? task.completed
           : {};
-        task.completed[dateKey] = true;
+        task.completed[dateKey] = checkboxes[index].checked;
       });
-      finish(true);
+      finish({ isComplete: completedTasks >= requiredTasks });
     };
     const dismissBackdrop = (event) => {
       if (event.target === taskConfirmModal) cancel();
@@ -612,9 +627,13 @@ async function toggleHabit(habitId, dateKey) {
   if (!habit) return;
 
   const isCompleting = !Boolean(habit.completed[dateKey]);
-  if (isCompleting && habit.details?.length && !(await confirmHabitTasks(habit, dateKey))) return;
-
-  habit.completed[dateKey] = isCompleting;
+  if (habit.details?.length) {
+    const taskResult = await confirmHabitTasks(habit, dateKey);
+    if (!taskResult) return;
+    habit.completed[dateKey] = taskResult.isComplete;
+  } else {
+    habit.completed[dateKey] = isCompleting;
+  }
   saveHabits();
   renderHeaders();
   renderHabits();
@@ -665,22 +684,8 @@ function renderDetailsChecklist() {
     const item = document.createElement("li");
     const text = document.createElement("span");
     const removeButton = document.createElement("button");
-    const checkbox = document.createElement("input");
 
-    checkbox.type = "checkbox";
-    detail.completed = detail.completed && typeof detail.completed === "object"
-      ? detail.completed
-      : {};
-    checkbox.checked = Boolean(detail.completed[todayKey]);
-    checkbox.setAttribute("aria-label", `Complete ${detail.text} today`);
     text.textContent = detail.text;
-    item.classList.toggle("done", checkbox.checked);
-    checkbox.addEventListener("change", () => {
-      detail.completed[todayKey] = checkbox.checked;
-      item.classList.toggle("done", checkbox.checked);
-      saveHabits();
-    });
-
     removeButton.type = "button";
     removeButton.className = "detail-remove-button";
     removeButton.textContent = "×";
@@ -691,9 +696,12 @@ function renderDetailsChecklist() {
       habit.details = habit.details.filter((item) => String(item.id) !== String(detail.id));
       saveHabits();
       renderDetailsChecklist();
+      renderHeaders();
+      renderHabits();
+      renderChart();
     });
 
-    item.append(text, removeButton, checkbox);
+    item.append(text, removeButton);
     detailsChecklist.appendChild(item);
   });
 }
@@ -713,8 +721,14 @@ function updateStats() {
   ).length;
 
   const monthCompleted = habits.reduce(
-    (total, habit) =>
-      total + monthDates.filter((date) => habit.completed[date]).length,
+    (total, habit) => total + monthDates.reduce(
+      (dayTotal, dateKey) => dayTotal + getHabitDayProgress(habit, dateKey),
+      0
+    ),
+    0
+  );
+  const completedHabitDays = habits.reduce(
+    (total, habit) => total + monthDates.filter((dateKey) => habit.completed[dateKey]).length,
     0
   );
 
@@ -724,7 +738,10 @@ function updateStats() {
     : 0;
   const elapsedDates = monthDates.filter((dateKey) => dateKey <= todayKey);
   const toDateCompleted = habits.reduce(
-    (total, habit) => total + elapsedDates.filter((date) => habit.completed[date]).length,
+    (total, habit) => total + elapsedDates.reduce(
+      (dayTotal, dateKey) => dayTotal + getHabitDayProgress(habit, dateKey),
+      0
+    ),
     0
   );
   const toDatePossible = habits.length * elapsedDates.length;
@@ -739,7 +756,7 @@ function updateStats() {
   document.getElementById("toDateProgress").textContent = `${toDateProgress}%`;
 
   document.getElementById("completionSummary").textContent =
-    `${monthCompleted} completion${monthCompleted === 1 ? "" : "s"} this month`;
+    `${completedHabitDays} completion${completedHabitDays === 1 ? "" : "s"} this month`;
 }
 
 function changeMonth(amount) {
@@ -892,6 +909,9 @@ detailsForm.addEventListener("submit", (event) => {
   });
   saveHabits();
   renderDetailsChecklist();
+  renderHeaders();
+  renderHabits();
+  renderChart();
   detailsForm.reset();
   detailsForm.classList.add("hidden");
   showDetailsFormButton.setAttribute("aria-expanded", "false");

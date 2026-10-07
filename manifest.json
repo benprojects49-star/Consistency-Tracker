@@ -1,6 +1,6 @@
 {
   "name": "Consistency Tracker",
-  "short_name": "Consistency",
+  "short_name": "Consistency Tracker",
   "description": "A simple offline consistency and habit tracker",
   "start_url": "./index.html",
   "scope": "./",

@@ -30,7 +30,6 @@
       <div class="date-display">
         <span id="currentDate"></span>
         <button id="todayButton" class="today-button" type="button">Today</button>
-        <button id="installButton" class="install-button" type="button" hidden>Install app</button>
       </div>
     </header>
 
@@ -100,7 +99,7 @@
       <div class="tracker-heading">
         <div class="tracker-title">
           <h3>Monthly habits</h3>
-          <p>Tap a cell to mark a habit complete. Press and hold a habit name for 2 seconds to add detailed steps.</p>
+          <p>Tap a cell to update progress. Tap a habit name to manage its tasks.</p>
         </div>
 
         <div class="view-controls" aria-label="Monthly habit size controls">
@@ -150,6 +149,8 @@
 
     <p class="footer-message">Progress, not perfection. Keep showing up.</p>
   </main>
+
+  <button id="installButton" class="install-button" type="button" hidden>Install app</button>
 
   <div id="habitModal" class="modal hidden">
     <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle">

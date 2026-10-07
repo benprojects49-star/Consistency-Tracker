@@ -139,13 +139,20 @@ input:focus-visible {
 }
 
 .install-button {
-  padding: 7px 10px;
-  border: 1px solid rgba(114, 221, 255, .45);
-  border-radius: 8px;
-  background: rgba(41, 182, 255, .12);
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 4;
+  padding: 11px 18px;
+  border: 1px solid rgba(114, 221, 255, .6);
+  border-radius: 999px;
+  background: rgba(12, 26, 50, .94);
   color: var(--blue-bright);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45), 0 0 18px rgba(41, 182, 255, .2);
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
 }
 
 .install-button[hidden] {
@@ -1061,7 +1068,7 @@ input:focus-visible {
 
 .details-checklist li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px 18px;
+  grid-template-columns: minmax(0, 1fr) 24px;
   align-items: center;
   gap: 10px;
   min-height: 46px;
@@ -1616,6 +1623,117 @@ body.view-compact .habit-title {
     /* Let the page grow so the browser's normal vertical scroll shows all habits. */
     max-height: none;
     overflow: visible;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(280px, 3fr);
+    grid-template-areas:
+      "topbar topbar"
+      "intro metrics"
+      "tracker tracker"
+      "trend trend"
+      "footer footer";
+    align-items: start;
+    gap: 12px 16px;
+  }
+
+  .topbar {
+    grid-area: topbar;
+    margin-bottom: 2px;
+  }
+
+  .hero {
+    display: contents;
+  }
+
+  .hero-copy {
+    grid-area: intro;
+    align-self: center;
+    padding: 3px 4px;
+  }
+
+  .hero-copy .eyebrow {
+    margin-bottom: 6px;
+  }
+
+  .hero h2 {
+    font-size: clamp(24px, 2.2vw, 32px);
+  }
+
+  .hero-text {
+    margin-top: 6px;
+  }
+
+  .stats-grid {
+    grid-area: metrics;
+    align-self: stretch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin: 0;
+  }
+
+  .stat-card {
+    min-width: 0;
+    min-height: 68px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 7px 4px;
+    text-align: center;
+  }
+
+  .stat-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+
+  .stat-card p {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .stat-card strong {
+    font-size: 13px;
+  }
+
+  .tracker-card {
+    grid-area: tracker;
+    min-width: 0;
+  }
+
+  .tracker-heading {
+    padding: 10px 14px;
+  }
+
+  .tracker-heading p {
+    max-width: 620px;
+    font-size: 9px;
+  }
+
+  .month-navigation {
+    padding: 5px 14px;
+  }
+
+  .chart-dashboard {
+    grid-area: trend;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .chart-card {
+    min-width: 0;
+    padding: 12px 15px;
+  }
+
+  .footer-message {
+    grid-area: footer;
+    margin-top: 0;
   }
 }
 
