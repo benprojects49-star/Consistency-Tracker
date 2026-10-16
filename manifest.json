@@ -1,22 +1,22 @@
 {
+  "id": "./",
   "name": "Consistency Tracker",
-  "short_name": "Consistency Tracker",
-  "description": "A simple offline consistency and habit tracker",
-  "start_url": "./index.html",
+  "short_name": "Consistency",
+  "description": "An offline-friendly consistency and habit tracker",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "landscape",
   "background_color": "#030711",
   "theme_color": "#030711",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "icon.svg",
+      "src": "./icon-maskable.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

@@ -553,6 +553,7 @@ function renderChart() {
     fill.style.height = `${Math.max(value, 3)}%`;
     label.textContent = labelText;
     column.title = title;
+    column.setAttribute("role", "img");
     column.setAttribute("aria-label", title);
     column.append(fill, label);
     barChart.appendChild(column);
@@ -825,8 +826,17 @@ function isInstalledApp() {
   return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 }
 
+function isIOSDevice() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
 function updateInstallButton() {
-  installButton.hidden = appInstalled || isInstalledApp();
+  const installed = appInstalled || isInstalledApp();
+  const manualInstallAvailable = isIOSDevice();
+
+  installButton.hidden = installed || (!deferredInstallPrompt && !manualInstallAvailable);
+  installButton.textContent = deferredInstallPrompt ? "Install app" : "Add to Home Screen";
 }
 
 window.addEventListener("beforeinstallprompt", (event) => {
@@ -843,13 +853,25 @@ window.addEventListener("appinstalled", () => {
 
 installButton.addEventListener("click", async () => {
   if (!deferredInstallPrompt) {
-    window.alert("To install, open your browser’s menu and choose ‘Add to Home Screen’ or ‘Install app’.");
+    if (isIOSDevice()) {
+      window.alert("To add this app, tap the Share button in Safari, then choose ‘Add to Home Screen’.");
+    }
     return;
   }
 
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
+  const installPrompt = deferredInstallPrompt;
   deferredInstallPrompt = null;
+  updateInstallButton();
+
+  try {
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice?.outcome === "accepted") appInstalled = true;
+  } catch (error) {
+    console.error("The install prompt could not be completed:", error);
+  }
+
+  updateInstallButton();
 });
 
 updateInstallButton();
