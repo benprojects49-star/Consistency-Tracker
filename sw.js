@@ -1,4 +1,4 @@
-const CACHE_NAME = "consistency-tracker-v17";
+const CACHE_NAME = "consistency-tracker-v25";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -37,6 +37,9 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith((async () => {
+      const cachedPage = await caches.match("./index.html") || await caches.match("./");
+      if (cachedPage) return cachedPage;
+
       try {
         const response = await fetch(request);
         if (response.ok) {
@@ -45,7 +48,7 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       } catch {
-        return (await caches.match("./index.html")) || Response.error();
+        return Response.error();
       }
     })());
     return;

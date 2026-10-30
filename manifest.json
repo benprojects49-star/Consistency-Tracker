@@ -3,9 +3,12 @@
   "name": "Consistency Tracker",
   "short_name": "Consistency",
   "description": "An offline-friendly consistency and habit tracker",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "landscape",
   "background_color": "#030711",
   "theme_color": "#030711",
   "icons": [

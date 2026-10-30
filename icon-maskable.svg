@@ -1,6 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Consistency Tracker</title>
+  <defs>
+    <linearGradient id="surface" x1="60" y1="40" x2="452" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#123b61"/>
+      <stop offset="1" stop-color="#09152d"/>
+    </linearGradient>
+    <linearGradient id="check" x1="166" y1="205" x2="350" y2="337" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a4f3ff"/>
+      <stop offset="1" stop-color="#39c9ff"/>
+    </linearGradient>
+  </defs>
   <rect width="512" height="512" fill="#030711"/>
-  <circle cx="256" cy="256" r="190" fill="#0b2342"/>
-  <circle cx="256" cy="256" r="142" fill="none" stroke="#72ddff" stroke-width="17" opacity=".55"/>
-  <path d="m157 261 67 65 131-145" fill="none" stroke="#72ddff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="210" fill="url(#surface)"/>
+  <circle cx="256" cy="256" r="157" fill="none" stroke="#72ddff" stroke-opacity=".3" stroke-width="12"/>
+  <path d="m165 258 69 68 113-132" fill="none" stroke="url(#check)" stroke-linecap="round" stroke-linejoin="round" stroke-width="38"/>
+  <circle cx="357" cy="155" r="8" fill="#40e0a0"/>
 </svg>

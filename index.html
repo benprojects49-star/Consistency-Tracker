@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#030711">
+  <meta name="color-scheme" content="dark">
   <meta name="description" content="An offline-friendly consistency and habit tracker">
   <meta name="application-name" content="Consistency">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Consistency">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any">
   <link rel="apple-touch-icon" href="./icon.svg">
   <title>Consistency Tracker</title>
   <link rel="stylesheet" href="styles.css">
@@ -40,7 +42,6 @@
       <div class="hero-copy">
         <p class="eyebrow">YOUR DISCIPLINE DASHBOARD</p>
         <h2>Build a life you’re proud of.</h2>
-        <p class="hero-text">Show up every day and let consistency do the heavy lifting.</p>
       </div>
 
       <div class="chart-dashboard">
@@ -50,16 +51,10 @@
               <strong id="chartTitle">Daily completions</strong>
               <small id="chartSubtitle">One bar represents one day</small>
             </div>
-            <div class="chart-menu-wrap">
-              <button id="chartMenuButton" class="chart-menu-button" type="button" aria-label="Change graph format" aria-expanded="false">⋮</button>
-              <div id="chartMenu" class="chart-menu hidden" role="menu">
-                <button type="button" data-chart-mode="daily" role="menuitem">Daily graph</button>
-                <button type="button" data-chart-mode="weekly" role="menuitem">Weekly graph</button>
-                <button type="button" data-chart-mode="monthly" role="menuitem">Monthly graph</button>
-              </div>
-            </div>
+
           </div>
           <div class="chart-viewport">
+            <div class="bar-percent-scale" aria-hidden="true"></div>
             <div id="barChart" class="bar-chart"></div>
           </div>
         </div>
@@ -101,8 +96,17 @@
     <section class="tracker-card">
       <div class="tracker-heading">
         <div class="tracker-title">
-          <h3>Monthly habits</h3>
-          <p>Tap a cell to update progress. Tap a habit name to manage its tasks.</p>
+          <div class="tracker-title-row">
+            <h3>Monthly habits</h3>
+            <div class="month-menu-wrap" hidden>
+              <button id="monthMenuButton" class="chart-menu-button" type="button" aria-label="More month options" aria-expanded="false">⋮</button>
+              <div id="monthMenu" class="chart-menu hidden" role="menu">
+                <button id="copyPreviousMonth" type="button" role="menuitem">Copy previous month’s habits</button>
+                <button id="setFocusPeriod" type="button" role="menuitem">Set focus period</button>
+              </div>
+            </div>
+          </div>
+          <p>Tap a cell to update progress; press and hold (or right-click) to mark a scheduled day skipped. Tap a habit name to edit or manage it.</p>
         </div>
 
         <div class="view-controls" aria-label="Monthly habit size controls">
@@ -113,7 +117,9 @@
           </div>
         </div>
 
-        <button id="addHabitButton" class="add-button" type="button">＋ Add habit</button>
+        <div class="tracker-actions">
+          <button id="addHabitButton" class="add-button" type="button">＋ Add habit</button>
+        </div>
       </div>
 
       <div class="month-navigation">
@@ -121,6 +127,7 @@
         <div class="month-label" id="monthTitle"></div>
         <button id="nextMonth" class="month-button" type="button" aria-label="Next month">›</button>
       </div>
+      <p id="focusPeriodLabel" class="focus-period-label hidden"></p>
 
       <div class="table-wrapper">
         <table class="habit-table">
@@ -144,7 +151,8 @@
       <div class="tracker-footer">
         <div class="legend">
           <span><i class="legend-box completed"></i> Completed</span>
-          <span><i class="legend-box"></i> Not completed</span>
+          <span><i class="legend-box not-completed"></i> Not completed</span>
+          <span><i class="legend-box skipped"></i> Skipped</span>
         </div>
         <span id="completionSummary">0 completions this month</span>
       </div>
@@ -164,6 +172,35 @@
       <form id="habitForm">
         <label for="habitName">Habit name</label>
         <input id="habitName" type="text" maxlength="28" placeholder="e.g. Read for 20 minutes" required>
+        <div class="sticker-picker" data-sticker-picker aria-label="Choose a habit icon">
+          <span class="sticker-picker-label">Choose an icon</span>
+          <div class="sticker-options">
+            <button type="button" data-sticker="🌅" aria-label="Sunrise icon">🌅</button><button type="button" data-sticker="🏋️" aria-label="Weightlifting icon">🏋️</button><button type="button" data-sticker="📚" aria-label="Books icon">📚</button><button type="button" data-sticker="💧" aria-label="Water icon">💧</button><button type="button" data-sticker="📝" aria-label="Writing icon">📝</button><button type="button" data-sticker="🍎" aria-label="Apple icon">🍎</button>
+            <button type="button" data-sticker="🧘" aria-label="Meditation icon">🧘</button><button type="button" data-sticker="🎵" aria-label="Music icon">🎵</button><button type="button" data-sticker="💰" aria-label="Money icon">💰</button><button type="button" data-sticker="🏃" aria-label="Running icon">🏃</button><button type="button" data-sticker="🚴" aria-label="Cycling icon">🚴</button><button type="button" data-sticker="🏊" aria-label="Swimming icon">🏊</button>
+            <button type="button" data-sticker="🥗" aria-label="Healthy eating icon">🥗</button><button type="button" data-sticker="🥛" aria-label="Milk icon">🥛</button><button type="button" data-sticker="☕" aria-label="Coffee icon">☕</button><button type="button" data-sticker="🧹" aria-label="Cleaning icon">🧹</button><button type="button" data-sticker="🛏️" aria-label="Bed icon">🛏️</button><button type="button" data-sticker="🌙" aria-label="Moon icon">🌙</button>
+            <button type="button" data-sticker="☀️" aria-label="Sun icon">☀️</button><button type="button" data-sticker="🪴" aria-label="Plant icon">🪴</button><button type="button" data-sticker="🌱" aria-label="Seedling icon">🌱</button><button type="button" data-sticker="🐕" aria-label="Dog icon">🐕</button><button type="button" data-sticker="🐈" aria-label="Cat icon">🐈</button><button type="button" data-sticker="🧠" aria-label="Brain icon">🧠</button>
+            <button type="button" data-sticker="💊" aria-label="Medicine icon">💊</button><button type="button" data-sticker="🦷" aria-label="Tooth icon">🦷</button><button type="button" data-sticker="🧴" aria-label="Skincare icon">🧴</button><button type="button" data-sticker="💻" aria-label="Computer icon">💻</button><button type="button" data-sticker="🎨" aria-label="Art icon">🎨</button><button type="button" data-sticker="✍️" aria-label="Writing hand icon">✍️</button>
+            <button type="button" data-sticker="📖" aria-label="Open book icon">📖</button><button type="button" data-sticker="🎯" aria-label="Target icon">🎯</button><button type="button" data-sticker="🧵" aria-label="Thread icon">🧵</button><button type="button" data-sticker="🎸" aria-label="Guitar icon">🎸</button><button type="button" data-sticker="🏆" aria-label="Trophy icon">🏆</button><button type="button" data-sticker="🧺" aria-label="Laundry icon">🧺</button>
+          </div>
+        </div>
+
+        <fieldset class="schedule-picker" data-day-selector>
+          <legend>Habit days</legend>
+          <div class="everyday-row">
+            <label class="everyday-option"><input type="checkbox" value="everyday" checked> Everyday</label>
+            <button class="custom-days-toggle" type="button" aria-label="Choose custom dates" title="Choose custom dates" aria-expanded="false">▦</button>
+          </div>
+          <div class="weekday-options">
+            <label><input type="checkbox" value="1"> Mon</label>
+            <label><input type="checkbox" value="2"> Tue</label>
+            <label><input type="checkbox" value="3"> Wed</label>
+            <label><input type="checkbox" value="4"> Thu</label>
+            <label><input type="checkbox" value="5"> Fri</label>
+            <label><input type="checkbox" value="6"> Sat</label>
+            <label><input type="checkbox" value="0"> Sun</label>
+          </div>
+          <div class="custom-date-picker hidden" aria-label="Choose dates in this month"></div>
+        </fieldset>
 
         <div class="modal-actions">
           <button type="button" id="cancelButton" class="cancel-button">Cancel</button>
@@ -178,18 +215,139 @@
       <button id="closeDetailsModal" class="close-button" type="button" aria-label="Close habit details">×</button>
       <div class="details-header">
         <div>
-          <h3 id="detailsTitle">Habit details</h3>
-          <p class="details-hint">Small steps make this habit easier to stick with.</p>
+          <div class="details-title-row">
+            <span id="detailsSticker" class="details-sticker" aria-hidden="true"></span>
+            <h3 id="detailsTitle">Habit details</h3>
+          </div>
+          <p class="details-hint">Scheduled Every day. Small steps make this habit easier to stick with.</p>
         </div>
-        <button id="showDetailsForm" class="details-add-button" type="button" aria-label="Add a task" aria-expanded="false" title="Add a task">＋</button>
+        <div class="details-header-actions">
+          <button id="reminderButton" class="icon-action-button reminder-icon-button" type="button" aria-label="Set daily reminder" title="Set daily reminder">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+          <button id="pauseHabitButton" class="icon-action-button pause-action-button" type="button" title="Pause habit" aria-label="Pause habit">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
+          </button>
+          <button id="editHabitButton" class="icon-action-button" type="button" aria-label="Edit habit and days" title="Edit habit and days">✎</button>
+          <button id="showDetailsForm" class="details-add-button" type="button" aria-label="Add a task" aria-expanded="false" title="Add a task">＋</button>
+        </div>
       </div>
       <ul id="detailsChecklist" class="details-checklist"></ul>
-      <form id="detailsForm" class="details-form hidden">
-        <label for="detailInput">Add a task or step</label>
+    </section>
+  </div>
+
+  <div id="habitEditModal" class="modal hidden">
+    <section class="modal-content edit-popup-content" role="dialog" aria-modal="true" aria-labelledby="editHabitPopupTitle">
+      <button id="closeHabitEditModal" class="close-button" type="button" aria-label="Close habit editor">×</button>
+      <h3 id="editHabitPopupTitle">Edit habit</h3>
+      <p>Update the habit name, schedule, and task completion rule.</p>
+      <form id="editHabitForm" class="details-form">
+        <label for="editHabitName">Habit name</label>
+        <input id="editHabitName" type="text" maxlength="28" required>
+        <div class="sticker-picker" data-sticker-picker aria-label="Choose a habit icon">
+          <span class="sticker-picker-label">Choose an icon</span>
+          <div class="sticker-options">
+            <button type="button" data-sticker="🌅" aria-label="Sunrise icon">🌅</button><button type="button" data-sticker="🏋️" aria-label="Weightlifting icon">🏋️</button><button type="button" data-sticker="📚" aria-label="Books icon">📚</button><button type="button" data-sticker="💧" aria-label="Water icon">💧</button><button type="button" data-sticker="📝" aria-label="Writing icon">📝</button><button type="button" data-sticker="🍎" aria-label="Apple icon">🍎</button>
+            <button type="button" data-sticker="🧘" aria-label="Meditation icon">🧘</button><button type="button" data-sticker="🎵" aria-label="Music icon">🎵</button><button type="button" data-sticker="💰" aria-label="Money icon">💰</button><button type="button" data-sticker="🏃" aria-label="Running icon">🏃</button><button type="button" data-sticker="🚴" aria-label="Cycling icon">🚴</button><button type="button" data-sticker="🏊" aria-label="Swimming icon">🏊</button>
+            <button type="button" data-sticker="🥗" aria-label="Healthy eating icon">🥗</button><button type="button" data-sticker="🥛" aria-label="Milk icon">🥛</button><button type="button" data-sticker="☕" aria-label="Coffee icon">☕</button><button type="button" data-sticker="🧹" aria-label="Cleaning icon">🧹</button><button type="button" data-sticker="🛏️" aria-label="Bed icon">🛏️</button><button type="button" data-sticker="🌙" aria-label="Moon icon">🌙</button>
+            <button type="button" data-sticker="☀️" aria-label="Sun icon">☀️</button><button type="button" data-sticker="🪴" aria-label="Plant icon">🪴</button><button type="button" data-sticker="🌱" aria-label="Seedling icon">🌱</button><button type="button" data-sticker="🐕" aria-label="Dog icon">🐕</button><button type="button" data-sticker="🐈" aria-label="Cat icon">🐈</button><button type="button" data-sticker="🧠" aria-label="Brain icon">🧠</button>
+            <button type="button" data-sticker="💊" aria-label="Medicine icon">💊</button><button type="button" data-sticker="🦷" aria-label="Tooth icon">🦷</button><button type="button" data-sticker="🧴" aria-label="Skincare icon">🧴</button><button type="button" data-sticker="💻" aria-label="Computer icon">💻</button><button type="button" data-sticker="🎨" aria-label="Art icon">🎨</button><button type="button" data-sticker="✍️" aria-label="Writing hand icon">✍️</button>
+            <button type="button" data-sticker="📖" aria-label="Open book icon">📖</button><button type="button" data-sticker="🎯" aria-label="Target icon">🎯</button><button type="button" data-sticker="🧵" aria-label="Thread icon">🧵</button><button type="button" data-sticker="🎸" aria-label="Guitar icon">🎸</button><button type="button" data-sticker="🏆" aria-label="Trophy icon">🏆</button><button type="button" data-sticker="🧺" aria-label="Laundry icon">🧺</button>
+          </div>
+        </div>
+        <fieldset class="schedule-picker" data-day-selector>
+          <legend>Habit days</legend>
+          <div class="everyday-row">
+            <label class="everyday-option"><input type="checkbox" value="everyday"> Everyday</label>
+            <button class="custom-days-toggle" type="button" aria-label="Choose custom dates" title="Choose custom dates" aria-expanded="false">▦</button>
+          </div>
+          <div class="weekday-options">
+            <label><input type="checkbox" value="1"> Mon</label>
+            <label><input type="checkbox" value="2"> Tue</label>
+            <label><input type="checkbox" value="3"> Wed</label>
+            <label><input type="checkbox" value="4"> Thu</label>
+            <label><input type="checkbox" value="5"> Fri</label>
+            <label><input type="checkbox" value="6"> Sat</label>
+            <label><input type="checkbox" value="0"> Sun</label>
+          </div>
+          <div class="custom-date-picker hidden" aria-label="Choose dates in this month"></div>
+        </fieldset>
+        <span class="task-rule-label" id="taskRuleLabel">Task completion rule</span>
+        <div class="task-rule-picker">
+          <button id="taskRuleButton" class="task-rule-button" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="taskRuleLabel taskRuleValue" data-value="half">
+            <span id="taskRuleValue">At least half</span><span class="task-rule-chevron" aria-hidden="true">▾</span>
+          </button>
+          <div id="taskRuleMenu" class="task-rule-menu hidden" role="listbox" aria-labelledby="taskRuleLabel">
+            <button type="button" role="option" aria-selected="true" data-task-rule="half">At least half</button>
+            <button type="button" role="option" aria-selected="false" data-task-rule="all">All tasks</button>
+            <button type="button" role="option" aria-selected="false" data-task-rule="custom">Custom percentage</button>
+          </div>
+        </div>
+        <label id="taskThresholdLabel" class="task-threshold-label hidden" for="taskThreshold">Required completion (%)</label>
+        <input id="taskThreshold" class="task-threshold-input hidden" type="number" min="1" max="100" value="50">
+        <div class="modal-actions">
+          <button id="cancelHabitEdit" class="cancel-button" type="button">Cancel</button>
+          <button class="save-button" type="submit">Save changes</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="taskEditModal" class="modal hidden">
+    <section class="modal-content edit-popup-content" role="dialog" aria-modal="true" aria-labelledby="taskEditPopupTitle">
+      <button id="closeTaskEditModal" class="close-button" type="button" aria-label="Close task editor">×</button>
+      <h3 id="taskEditPopupTitle">Add a task</h3>
+      <p>Add a step and choose the days it applies.</p>
+      <form id="detailsForm" class="details-form">
+        <label id="detailFormLabel" for="detailInput">Add a task or step</label>
         <div class="details-input-row">
           <input id="detailInput" type="text" maxlength="60" placeholder="e.g. Squats 25 × 4" required>
-          <button id="cancelDetailButton" class="cancel-button details-cancel-button" type="button" aria-label="Cancel adding task" title="Cancel">×</button>
-          <button class="save-button" type="submit">Add</button>
+        </div>
+        <fieldset class="schedule-picker" data-day-selector>
+          <legend>Task days</legend>
+          <div class="everyday-row">
+            <label class="everyday-option"><input type="checkbox" value="everyday" checked> Everyday</label>
+            <button class="custom-days-toggle" type="button" aria-label="Choose custom dates" title="Choose custom dates" aria-expanded="false">▦</button>
+          </div>
+          <div class="weekday-options">
+            <label><input type="checkbox" value="1"> Mon</label>
+            <label><input type="checkbox" value="2"> Tue</label>
+            <label><input type="checkbox" value="3"> Wed</label>
+            <label><input type="checkbox" value="4"> Thu</label>
+            <label><input type="checkbox" value="5"> Fri</label>
+            <label><input type="checkbox" value="6"> Sat</label>
+            <label><input type="checkbox" value="0"> Sun</label>
+          </div>
+          <div class="custom-date-picker hidden" aria-label="Choose dates in this month"></div>
+        </fieldset>
+        <div class="modal-actions">
+          <button id="cancelDetailButton" class="cancel-button" type="button">Cancel</button>
+          <button id="saveDetailButton" class="save-button" type="submit">Add</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="reminderModal" class="modal hidden">
+    <section class="modal-content reminder-content" role="dialog" aria-modal="true" aria-labelledby="reminderModalTitle">
+      <button id="closeReminderModal" class="close-button" type="button" aria-label="Close reminder settings">×</button>
+      <h3 id="reminderModalTitle">Set a daily reminder</h3>
+      <p>Choose a time to get reminded to check in with your habits.</p>
+      <form id="reminderForm">
+        <label for="reminderTimeInput">Reminder time (24-hour HH:MM)</label>
+        <input id="reminderTimeInput" type="time" step="60" value="20:00">
+        <div class="reminder-hint">
+          <p id="reminderPermissionStatus" role="status" aria-live="polite">Notification permission has not been checked.</p>
+          <button id="requestNotificationPermission" class="cancel-button" type="button">Enable notifications</button>
+          <p>The reminder triggers while the app is open. Notifications require a supported browser and a secure connection (HTTPS).</p>
+        </div>
+        <div class="modal-actions">
+          <button id="disableReminderButton" type="button" class="cancel-button" style="margin-right:auto">Disable</button>
+          <button id="cancelReminderButton" type="button" class="cancel-button">Cancel</button>
+          <button type="submit" class="save-button">Save</button>
         </div>
       </form>
     </section>
@@ -204,6 +362,40 @@
       <div class="confirm-actions">
         <button id="cancelTaskConfirm" class="cancel-button" type="button">Cancel</button>
         <button id="acceptTaskConfirm" class="save-button" type="button" disabled>Confirm all</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="focusPeriodModal" class="modal hidden">
+    <section class="modal-content focus-period-content" role="dialog" aria-modal="true" aria-labelledby="focusPeriodTitle">
+      <button id="closeFocusPeriodModal" class="close-button" type="button" aria-label="Close focus period settings">×</button>
+      <h3 id="focusPeriodTitle">Set a focus period</h3>
+      <p>Choose a name and date range for a challenge or season, such as a three-month Winter Arc.</p>
+      <form id="focusPeriodForm">
+        <label for="focusPeriodName">Period name</label>
+        <input id="focusPeriodName" type="text" maxlength="32" placeholder="e.g. Winter Arc" required>
+        <label for="focusPeriodStart">Start date</label>
+        <input id="focusPeriodStart" type="date" required>
+        <label for="focusPeriodEnd">End date</label>
+        <input id="focusPeriodEnd" type="date" required>
+        <div class="modal-actions">
+          <button id="clearFocusPeriod" type="button" class="cancel-button" style="margin-right:auto">Clear</button>
+          <button id="cancelFocusPeriod" type="button" class="cancel-button">Cancel</button>
+          <button type="submit" class="save-button">Save period</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="monthStartModal" class="modal hidden">
+    <section class="modal-content confirm-content month-start-content" role="dialog" aria-modal="true" aria-labelledby="monthStartTitle">
+      <span class="confirm-icon" aria-hidden="true">↻</span>
+      <h3 id="monthStartTitle">A new month is here</h3>
+      <p id="monthStartMessage">Would you like to reuse last month’s habits and tasks, or start with a blank month?</p>
+      <div class="month-start-actions">
+        <button id="startFreshMonth" class="cancel-button" type="button">Start fresh</button>
+        <button id="reusePreviousMonth" class="save-button" type="button">Reuse previous habits</button>
+        <button id="laterMonthDecision" class="month-later-button" type="button">Not now</button>
       </div>
     </section>
   </div>

@@ -339,12 +339,34 @@ input:focus-visible {
   overflow-x: auto;
 }
 
+.chart-viewport {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: 5px;
+  align-items: start;
+  height: 180px;
+}
+
+.chart-viewport .bar-chart {
+  grid-column: 2;
+}
+
 .bar-chart {
   display: flex;
   align-items: flex-end;
   gap: 3px;
+  position: relative;
+  background: repeating-linear-gradient(
+    to top,
+    transparent 0,
+    transparent calc(10% - 1px),
+    rgba(114, 221, 255, .12) calc(10% - 1px),
+    rgba(114, 221, 255, .12) 10%
+  );
+  background-size: 100% calc(100% - 15px);
+  background-repeat: no-repeat;
   width: 100%;
-  height: 125px;
+  height: 180px;
   min-width: 100%;
   border-bottom: 1px solid var(--line);
 }
@@ -385,6 +407,57 @@ input:focus-visible {
   width: 15px;
   min-width: 15px;
   flex: 0 0 15px;
+}
+
+.bar-percent-scale {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: block;
+  width: 22px;
+  height: 165px;
+  padding-right: 4px;
+  background: linear-gradient(90deg, rgba(8, 18, 36, .78), rgba(8, 18, 36, .35));
+  pointer-events: none;
+}
+
+.bar-percent-scale span {
+  position: absolute;
+  right: 4px;
+  transform: translateY(-50%);
+  color: rgba(173, 197, 222, .78);
+  font-size: 8px;
+  line-height: 1;
+  text-align: right;
+}
+
+.bar-percent-scale span:first-child {
+  transform: none;
+}
+
+.bar-percent-scale span:last-child {
+  transform: translateY(-100%);
+}
+
+.bar-column.today .bar-fill {
+  background: linear-gradient(180deg, #ffe08a, #ff9e3d);
+  box-shadow: 0 0 12px rgba(255, 179, 92, .52);
+}
+
+.bar-column.today::after {
+  position: absolute;
+  inset: 0 -2px 15px;
+  border: 1px solid rgba(255, 179, 92, .55);
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  content: "";
+  pointer-events: none;
+}
+
+.bar-column.today .bar-label {
+  color: var(--orange);
+  font-weight: 800;
 }
 
 .bar-label {
@@ -458,6 +531,14 @@ input:focus-visible {
   font-size: 16px;
 }
 
+.stat-card small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.25;
+}
+
 .tracker-card {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -466,6 +547,7 @@ input:focus-visible {
 }
 
 .tracker-heading {
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 15px;
   padding: 23px 25px;
@@ -483,8 +565,21 @@ input:focus-visible {
 }
 
 .view-controls {
-  gap: 6px;
-  margin-left: auto;
+  flex: 0 0 auto;
+  gap: 5px;
+  margin-left: 0;
+}
+
+.tracker-title {
+  min-width: 0;
+  flex: 1 0 100%;
+}
+
+.tracker-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .view-controls-label {
@@ -509,9 +604,127 @@ input:focus-visible {
 }
 
 .habit-zoom button {
-  width: 28px;
-  height: 28px;
-  font-size: 18px;
+  width: 23px;
+  height: 23px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.tracker-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.month-menu-wrap {
+  position: relative;
+  display: block;
+}
+
+.month-menu-wrap[hidden] {
+  display: none !important;
+}
+
+/* Focus-period controls were retired; keep the useful copy-month action available. */
+#setFocusPeriod {
+  display: none;
+}
+
+.utility-button {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-light);
+  color: var(--blue-bright);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.utility-button[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #123b59;
+}
+
+ .task-rule-label {
+  display: block;
+  margin-top: 13px;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.task-rule-picker {
+  position: relative;
+}
+
+.task-rule-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #030914;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+}
+
+.task-rule-button[aria-expanded="true"] {
+  border-color: var(--blue);
+}
+
+.task-rule-chevron {
+  color: var(--blue-bright);
+  transition: transform .18s;
+}
+
+.task-rule-button[aria-expanded="true"] .task-rule-chevron {
+  transform: rotate(180deg);
+}
+
+.task-rule-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  z-index: 6;
+  display: grid;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid rgba(41, 182, 255, .35);
+  border-radius: 9px;
+  background: #0c1a32;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .5);
+}
+
+.task-rule-menu button {
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.task-rule-menu button:hover,
+.task-rule-menu button[aria-selected="true"] {
+  background: #173452;
+  color: var(--blue-bright);
+}
+
+.task-threshold-label {
+  margin-top: 12px;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .add-button,
@@ -540,6 +753,29 @@ input:focus-visible {
   font-size: 16px;
   font-weight: 800;
   text-align: center;
+}
+
+.focus-period-label {
+  margin: 0 12px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.habit-table .focus-period-day {
+  background-color: rgba(64, 224, 160, .08);
+}
+
+.check-cell.focus-period-day {
+  box-shadow: inset 0 0 0 1px rgba(64, 224, 160, .28);
+}
+
+.focus-period-content label {
+  margin-top: 12px;
+}
+
+.focus-period-content input[type="date"] {
+  color-scheme: dark;
 }
 
 .month-button {
@@ -722,8 +958,8 @@ input:focus-visible {
 }
 
 .progress-history-mark.completed {
-  background: var(--green);
-  box-shadow: 0 0 7px rgba(64, 224, 160, .22);
+  background: var(--blue);
+  box-shadow: 0 0 7px rgba(41, 182, 255, .22);
 }
 
 .week-header {
@@ -830,8 +1066,87 @@ input:focus-visible {
   place-items: center;
   border-radius: 8px;
   background: #102b51;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-variant-emoji: emoji;
   font-size: 16px;
+  line-height: 1;
   vertical-align: middle;
+}
+
+.details-sticker,
+.sticker-options button {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-variant-emoji: emoji;
+}
+
+.sticker-picker {
+  margin: 13px 0 0;
+}
+
+.sticker-picker-label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sticker-options {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.sticker-options button {
+  display: grid;
+  min-width: 0;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #030914;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.sticker-options button:hover,
+.sticker-options button[aria-pressed="true"] {
+  border-color: var(--blue-bright);
+  background: #123b59;
+  box-shadow: 0 0 10px rgba(41, 182, 255, .2);
+}
+
+.details-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.details-sticker {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(114, 221, 255, .25);
+  border-radius: 11px;
+  background: rgba(41, 182, 255, .1);
+  font-size: 22px;
+}
+
+.details-title-row h3 {
+  min-width: 0;
+}
+
+.edit-popup-content {
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
 }
 
 .habit-title {
@@ -893,7 +1208,7 @@ input:focus-visible {
   min-width: 0;
   padding: 0;
   border: 1.5px solid #35506d;
-  border-radius: 8px;
+  border-radius: 50%;
   background: #030914;
   color: white;
   font-size: clamp(10px, calc(var(--check-size) * .45), 15px);
@@ -903,6 +1218,24 @@ input:focus-visible {
 .check-button.completed {
   border-color: var(--blue-bright);
   background: var(--blue);
+  color: #031b2a;
+}
+
+.check-button.not-completed {
+  border-color: #35506d;
+  background: #030914;
+  color: var(--text);
+}
+
+.check-button:disabled {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+  opacity: .22;
+}
+
+.check-cell.not-scheduled {
+  background: rgba(3, 9, 20, .25);
 }
 
 .habit-progress-cell {
@@ -962,12 +1295,28 @@ input:focus-visible {
   width: 11px;
   height: 11px;
   border: 1px solid #35506d;
-  border-radius: 3px;
+  border-radius: 50%;
 }
 
 .legend-box.completed {
-  border-color: var(--green);
-  background: var(--green);
+  border-color: var(--blue-bright);
+  background: var(--blue);
+}
+
+.legend-box.not-completed {
+  border-color: #58708f;
+  background: #030914;
+}
+
+.legend-box.skipped {
+  border-color: var(--orange);
+  background: rgba(255, 179, 92, .16);
+}
+
+.check-button.skipped {
+  border-color: var(--orange);
+  background: rgba(255, 179, 92, .16);
+  color: var(--orange);
 }
 
 .footer-message {
@@ -1025,6 +1374,7 @@ input:focus-visible {
 
 .details-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
@@ -1032,13 +1382,69 @@ input:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.details-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
 .details-header h3 {
+  overflow-wrap: anywhere;
   color: var(--blue-bright);
 }
 
 .details-content .details-hint {
   margin: 6px 0 0;
   font-size: 12px;
+}
+
+.details-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  margin-top: 1px;
+}
+
+.icon-action-button,
+.detail-edit-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(114, 221, 255, .35);
+  border-radius: 9px;
+  background: rgba(41, 182, 255, .08);
+  color: var(--blue-bright);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.icon-action-button:hover,
+.detail-edit-button:hover {
+  background: rgba(41, 182, 255, .2);
+}
+
+.icon-action-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reminder-icon-button {
+  color: var(--orange);
+  border-color: rgba(255, 179, 92, .4);
+  background: rgba(255, 179, 92, .08);
+}
+
+.reminder-icon-button:hover {
+  border-color: var(--orange);
+  background: rgba(255, 179, 92, .18);
+}
+
+.pause-action-button.is-paused {
+  color: var(--green);
+  border-color: rgba(64, 224, 160, .45);
+  background: rgba(64, 224, 160, .1);
 }
 
 .details-add-button {
@@ -1076,14 +1482,14 @@ input:focus-visible {
 
 .details-checklist li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 46px;
   padding: 11px 13px;
-  border: 1px solid rgba(53, 80, 109, .8);
+  border: 1px solid rgba(41, 182, 255, .3);
   border-radius: 11px;
-  background: rgba(3, 9, 20, .58);
+  background: rgba(3, 29, 54, .65);
   font-size: 13px;
   transition: border-color .2s, background .2s;
 }
@@ -1093,9 +1499,27 @@ input:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.detail-task-info {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.details-checklist .detail-schedule {
+  color: var(--muted);
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.detail-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
 .details-checklist li.done {
-  border-color: rgba(64, 224, 160, .35);
-  background: rgba(13, 60, 54, .28);
+  border-color: rgba(41, 182, 255, .65);
+  background: rgba(18, 59, 89, .55);
 }
 
 .details-checklist li.details-empty-state {
@@ -1134,7 +1558,7 @@ input:focus-visible {
 }
 
 .details-checklist li.done span {
-  color: var(--muted);
+  color: var(--blue-bright);
   text-decoration: line-through;
 }
 
@@ -1144,15 +1568,143 @@ input:focus-visible {
   border-top: 1px solid var(--line);
 }
 
+.edit-popup-content .details-form {
+  margin-top: 16px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.edit-popup-content .schedule-picker {
+  margin-bottom: 15px;
+}
+
 .details-form.hidden {
   display: none;
 }
 
-.details-form label {
+ .details-form label {
   display: block;
   margin-bottom: 7px;
   font-size: 12px;
   font-weight: 700;
+}
+
+.schedule-picker {
+  min-width: 0;
+  margin: 14px 0 0;
+  padding: 10px 11px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.schedule-picker legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.schedule-picker .everyday-option,
+.weekday-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.schedule-picker input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--blue);
+}
+
+.schedule-picker.custom-mode .everyday-row .everyday-option,
+.schedule-picker.custom-mode .weekday-options {
+  display: none;
+}
+
+/* Weekday checkboxes are not applicable while Everyday is selected. */
+.schedule-picker.everyday-mode .weekday-options {
+  display: none;
+}
+
+.everyday-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.schedule-picker .everyday-row .everyday-option {
+  display: inline-flex;
+}
+
+.custom-days-toggle {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #030914;
+  color: var(--blue-bright);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.custom-days-toggle[aria-expanded="true"] {
+  border-color: var(--blue);
+  background: #123b59;
+}
+
+.custom-date-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.custom-date-picker.hidden {
+  display: none;
+}
+
+.custom-date-heading {
+  grid-column: 1 / -1;
+  color: var(--blue-bright);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.custom-date-option {
+  display: grid !important;
+  min-height: 31px;
+  place-items: center;
+  margin: 0 !important;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #030914;
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  cursor: pointer;
+}
+
+.custom-date-option:has(input:checked) {
+  border-color: var(--blue);
+  background: #123b59;
+  color: var(--blue-bright) !important;
+}
+
+.custom-date-option input {
+  position: absolute;
+  width: 1px !important;
+  height: 1px;
+  opacity: 0;
 }
 
 .details-input-row {
@@ -1240,18 +1792,71 @@ input:focus-visible {
   color: var(--muted);
 }
 
+.reminder-content {
+  border-color: rgba(41, 182, 255, .3);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(41, 182, 255, .1), transparent 13rem),
+    linear-gradient(145deg, #0c1a32, #071225 75%);
+}
+
+.reminder-content .reminder-hint p {
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.reminder-content input[type="time"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #030914;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.reminder-content input[type="time"]:focus-visible {
+  outline: 2px solid var(--blue-bright);
+  outline-offset: 2px;
+}
+
+.reminder-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-light);
+  color: var(--blue-bright);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reminder-button svg {
+  flex-shrink: 0;
+}
+
+.reminder-button:hover {
+  border-color: var(--blue);
+  background: #123b59;
+}
+
 .task-confirm-content {
   width: min(100%, 420px);
   max-height: min(82vh, 660px);
   overflow-y: auto;
-  border-color: rgba(64, 224, 160, .3);
+  border-color: rgba(41, 182, 255, .3);
   background:
-    radial-gradient(circle at 100% 0%, rgba(64, 224, 160, .1), transparent 13rem),
+    radial-gradient(circle at 100% 0%, rgba(41, 182, 255, .1), transparent 13rem),
     linear-gradient(145deg, #0c1a32, #071225 75%);
 }
 
 .task-confirm-content h3 {
-  color: var(--green);
+  color: var(--blue-bright);
 }
 
 .task-confirm-content > p {
@@ -1286,7 +1891,7 @@ input:focus-visible {
   height: 18px;
   flex: 0 0 auto;
   margin: 0;
-  accent-color: var(--green);
+  accent-color: var(--blue);
 }
 
 .task-confirm-content .confirm-actions {
@@ -1341,6 +1946,32 @@ input:focus-visible {
 
 .confirm-actions button {
   min-width: 105px;
+}
+
+.month-start-content {
+  width: min(100%, 420px);
+}
+
+.month-start-actions {
+  display: grid;
+  gap: 9px;
+}
+
+.month-start-actions button {
+  width: 100%;
+  min-height: 40px;
+}
+
+.month-later-button {
+  padding: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.month-later-button:hover {
+  color: var(--blue-bright);
 }
 
 .confirm-accept-button {
@@ -1466,7 +2097,11 @@ body.view-compact .habit-title {
 
   .chart-viewport,
   .bar-chart {
-    height: 96px;
+    height: 165px;
+  }
+
+  .bar-percent-scale {
+    height: 150px;
   }
 
   .bar-chart.daily {
@@ -1510,11 +2145,7 @@ body.view-compact .habit-title {
     padding: 11px 16px;
   }
 
-  /* Desktop always uses the largest habit size; zoom controls remain available on phones. */
-  .view-controls {
-    display: none;
-  }
-
+  /* Desktop uses the largest habit size; the compact zoom controls remain visible. */
   body,
   body.view-micro,
   body.view-tiny,
@@ -1540,6 +2171,8 @@ body.view-compact .habit-title {
 
   .add-button {
     padding: 8px 12px;
+    font-size: 11px;
+    white-space: nowrap;
   }
 
   .month-navigation {
@@ -1628,9 +2261,10 @@ body.view-compact .habit-title {
   }
 
   .table-wrapper {
-    /* Let the page grow so the browser's normal vertical scroll shows all habits. */
+    /* Keep all habit rows in page flow while allowing narrow desktop tables to scroll sideways. */
     max-height: none;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: visible;
   }
 }
 
@@ -1778,6 +2412,18 @@ body.view-compact .habit-title {
   }
 }
 
+/* Retire the old focus-period UI and any saved-period highlights. */
+#focusPeriodLabel,
+#focusPeriodModal {
+  display: none !important;
+}
+
+.habit-table .focus-period-day,
+.check-cell.focus-period-day {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 @media (max-width: 600px) {
   .app-shell {
     width: calc(100% - 24px);
@@ -1820,27 +2466,41 @@ body.view-compact .habit-title {
   }
 
   .tracker-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 19px;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 15px 16px;
   }
 
-  .tracker-title,
-  .view-controls {
+  .tracker-title {
     width: 100%;
+    flex: 1 0 100%;
+  }
+
+  .view-controls,
+  .tracker-actions {
+    width: auto;
+  }
+
+  .tracker-actions {
+    justify-content: flex-end;
+    margin-left: auto;
   }
 
   .view-controls-label {
-    margin-right: auto;
+    margin-right: 2px;
+    font-size: 10px;
   }
 
   .habit-zoom button {
-    width: 34px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
   }
 
   .add-button {
-    width: 100%;
+    width: auto;
+    padding: 8px 11px;
   }
 
   .month-navigation {
