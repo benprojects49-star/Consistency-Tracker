@@ -302,8 +302,8 @@ function normalizeHabits(value) {
     .map((habit, index) => ({
       id: habit.id ?? `${Date.now()}-${index}`,
       name: habit.name.trim(),
-      sticker: availableStickers.has(habit.sticker)
-        ? habit.sticker
+      sticker: typeof habit.sticker === "string" && habit.sticker.trim()
+        ? habit.sticker.trim()
         : getDefaultSticker(habit.name),
       days: normalizeSchedule(habit.days),
       completed:
@@ -1170,9 +1170,24 @@ function finishMonthStart(choice) {
   if (getMonthKey(viewedMonth) === targetKey) renderMonth();
 }
 
+function getSingleEmoji(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  const firstGrapheme = typeof Intl.Segmenter === "function"
+    ? [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)][0]?.segment || ""
+    : Array.from(text)[0] || "";
+  const isEmoji = /[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\p{Emoji_Modifier}]/u.test(firstGrapheme) ||
+    /[#*0-9]\uFE0F?\u20E3/u.test(firstGrapheme);
+
+  return isEmoji ? firstGrapheme : "";
+}
+
 function setSelectedSticker(sticker) {
-  selectedSticker = sticker || null;
+  selectedSticker = getSingleEmoji(sticker) || null;
   document.querySelectorAll("[data-sticker-picker]").forEach((picker) => {
+    const input = picker.querySelector(".sticker-input");
+    if (input && input.value !== (selectedSticker || "")) input.value = selectedSticker || "";
     picker.querySelectorAll("[data-sticker]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.sticker === selectedSticker));
     });
@@ -1183,6 +1198,9 @@ document.querySelectorAll("[data-sticker-picker]").forEach((picker) => {
   picker.addEventListener("click", (event) => {
     const button = event.target.closest("[data-sticker]");
     if (button) setSelectedSticker(button.dataset.sticker);
+  });
+  picker.querySelector(".sticker-input")?.addEventListener("input", (event) => {
+    setSelectedSticker(getSingleEmoji(event.target.value));
   });
 });
 
@@ -1748,9 +1766,10 @@ document.addEventListener("keydown", (event) => {
     confirmCancelButton.click();
     return;
   }
-  if (!chartMenu.classList.contains("hidden")) {
-    chartMenu.classList.add("hidden");
-    chartMenuButton.setAttribute("aria-expanded", "false");
+  if (!monthMenu.classList.contains("hidden")) {
+    monthMenu.classList.add("hidden");
+    monthMenuButton.setAttribute("aria-expanded", "false");
+    return;
   }
   if (!detailsModal.classList.contains("hidden")) {
     closeHabitDetails();

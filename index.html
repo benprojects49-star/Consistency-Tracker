@@ -98,7 +98,7 @@
         <div class="tracker-title">
           <div class="tracker-title-row">
             <h3>Monthly habits</h3>
-            <div class="month-menu-wrap" hidden>
+            <div class="month-menu-wrap">
               <button id="monthMenuButton" class="chart-menu-button" type="button" aria-label="More month options" aria-expanded="false">⋮</button>
               <div id="monthMenu" class="chart-menu hidden" role="menu">
                 <button id="copyPreviousMonth" type="button" role="menuitem">Copy previous month’s habits</button>
@@ -173,7 +173,8 @@
         <label for="habitName">Habit name</label>
         <input id="habitName" type="text" maxlength="28" placeholder="e.g. Read for 20 minutes" required>
         <div class="sticker-picker" data-sticker-picker aria-label="Choose a habit icon">
-          <span class="sticker-picker-label">Choose an icon</span>
+          <label class="sticker-picker-label" for="habitStickerInput">Choose an icon</label>
+          <input id="habitStickerInput" class="sticker-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Habit emoji" title="Tap to choose one emoji">
           <div class="sticker-options">
             <button type="button" data-sticker="🌅" aria-label="Sunrise icon">🌅</button><button type="button" data-sticker="🏋️" aria-label="Weightlifting icon">🏋️</button><button type="button" data-sticker="📚" aria-label="Books icon">📚</button><button type="button" data-sticker="💧" aria-label="Water icon">💧</button><button type="button" data-sticker="📝" aria-label="Writing icon">📝</button><button type="button" data-sticker="🍎" aria-label="Apple icon">🍎</button>
             <button type="button" data-sticker="🧘" aria-label="Meditation icon">🧘</button><button type="button" data-sticker="🎵" aria-label="Music icon">🎵</button><button type="button" data-sticker="💰" aria-label="Money icon">💰</button><button type="button" data-sticker="🏃" aria-label="Running icon">🏃</button><button type="button" data-sticker="🚴" aria-label="Cycling icon">🚴</button><button type="button" data-sticker="🏊" aria-label="Swimming icon">🏊</button>
@@ -248,7 +249,8 @@
         <label for="editHabitName">Habit name</label>
         <input id="editHabitName" type="text" maxlength="28" required>
         <div class="sticker-picker" data-sticker-picker aria-label="Choose a habit icon">
-          <span class="sticker-picker-label">Choose an icon</span>
+          <label class="sticker-picker-label" for="editHabitStickerInput">Choose an icon</label>
+          <input id="editHabitStickerInput" class="sticker-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Habit emoji" title="Tap to choose one emoji">
           <div class="sticker-options">
             <button type="button" data-sticker="🌅" aria-label="Sunrise icon">🌅</button><button type="button" data-sticker="🏋️" aria-label="Weightlifting icon">🏋️</button><button type="button" data-sticker="📚" aria-label="Books icon">📚</button><button type="button" data-sticker="💧" aria-label="Water icon">💧</button><button type="button" data-sticker="📝" aria-label="Writing icon">📝</button><button type="button" data-sticker="🍎" aria-label="Apple icon">🍎</button>
             <button type="button" data-sticker="🧘" aria-label="Meditation icon">🧘</button><button type="button" data-sticker="🎵" aria-label="Music icon">🎵</button><button type="button" data-sticker="💰" aria-label="Money icon">💰</button><button type="button" data-sticker="🏃" aria-label="Running icon">🏃</button><button type="button" data-sticker="🚴" aria-label="Cycling icon">🚴</button><button type="button" data-sticker="🏊" aria-label="Swimming icon">🏊</button>
@@ -414,6 +416,15 @@
 
   <script src="script.js"></script>
   <script>
+    document.getElementById("editHabitButton").addEventListener("click", () => {
+      requestAnimationFrame(() => {
+        const sticker = document.getElementById("detailsSticker").textContent;
+        const stickerInput = document.getElementById("editHabitStickerInput");
+        stickerInput.value = sticker;
+        stickerInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    });
+
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("./sw.js").catch((error) => {

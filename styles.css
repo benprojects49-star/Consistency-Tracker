@@ -1091,9 +1091,26 @@ input:focus-visible {
   font-weight: 700;
 }
 
+.modal-content .sticker-input {
+  display: block;
+  width: 58px;
+  height: 58px;
+  padding: 4px;
+  border-radius: 12px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif !important;
+  font-size: 28px !important;
+  line-height: 1;
+  text-align: center;
+  cursor: text;
+}
+
+.modal-content .sticker-input::placeholder {
+  color: var(--muted);
+  opacity: .7;
+}
+
 .sticker-options {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  display: none;
   gap: 6px;
   max-height: 190px;
   overflow-y: auto;
