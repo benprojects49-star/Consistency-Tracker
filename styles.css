@@ -1210,8 +1210,14 @@ input:focus-visible {
   transition: background .2s;
 }
 
-.check-cell.today {
-  background: rgba(32, 91, 142, .2);
+.habit-table thead th.today,
+.habit-table tfoot th.today {
+  background-color: rgba(41, 182, 255, .16);
+}
+
+.habit-table td.check-cell.today {
+  background-color: rgba(41, 182, 255, .2) !important;
+  box-shadow: inset 1px 0 rgba(114, 221, 255, .35), inset -1px 0 rgba(114, 221, 255, .35);
 }
 
 .check-button {

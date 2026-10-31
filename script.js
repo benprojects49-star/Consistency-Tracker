@@ -1044,6 +1044,7 @@ function updateStats() {
   const currentMonthHabits = habitMonths[getMonthKey(today)] || [];
   const todayScheduled = currentMonthHabits.filter((habit) => isHabitScheduled(habit, todayKey));
   const todayCompleted = todayScheduled.filter((habit) => habit.completed[todayKey]).length;
+  document.getElementById("todayCountLabel").textContent = "Completed today";
 
   const monthCompleted = habits.reduce(
     (total, habit) => total + monthDates.reduce(
